@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: fleet
+      POSTGRES_PASSWORD: fleet
+      POSTGRES_DB: fleet
+    ports:
+      - "5432:5432"
+    volumes:
+      - fleet-pg:/var/lib/postgresql/data
+
+volumes:
+  fleet-pg:

@@ -1,0 +1,1 @@
+ALTER TABLE "update_jobs" ADD COLUMN "kind" text DEFAULT 'update' NOT NULL;
