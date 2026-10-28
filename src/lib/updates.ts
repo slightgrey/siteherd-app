@@ -7,6 +7,7 @@ import { loadExclusions } from "@/lib/exclusions";
 import { rollbackTarget } from "@/lib/rollback";
 import { reports, sites, updateJobs, type UpdateJob } from "@/db/schema";
 import { editedPlugins, parseReport, pendingUpdates, type Report } from "@/lib/report";
+import { inferJobResults } from "@/lib/job-reconcile";
 import { callSite } from "@/lib/site-client";
 import { slugOf } from "@/lib/vulnerabilities";
 import {
@@ -36,9 +37,53 @@ export function pendingItems(report: Report, excluded: ReadonlySet<string> = new
   ];
 }
 
+// A job without news from the site for this long is checked against its reports.
+const QUIET_MS = 3 * 60 * 1000;
+
+/**
+ * Complete jobs that went quiet (no push for QUIET_MS) when the site's latest
+ * report, received after the job started, shows every item done. Some hosts
+ * (e.g. LiteSpeed) end the plugin's background request after the work but
+ * before it can send its final result.
+ */
+async function reconcileQuietJobs(siteIds: string[]) {
+  const quiet = await db
+    .select()
+    .from(updateJobs)
+    .where(
+      and(
+        inArray(updateJobs.siteId, siteIds),
+        inArray(updateJobs.status, [...ACTIVE_JOB_STATUSES]),
+        lt(updateJobs.updatedAt, new Date(Date.now() - QUIET_MS)),
+      ),
+    );
+  for (const job of quiet) {
+    const [latest] = await db
+      .select({ payload: reports.payload, receivedAt: reports.receivedAt })
+      .from(reports)
+      .where(eq(reports.siteId, job.siteId))
+      .orderBy(desc(reports.receivedAt))
+      .limit(1);
+    const report = latest && latest.receivedAt > job.createdAt ? parseReport(latest.payload) : null;
+    const results = report ? inferJobResults(job, report) : null;
+    if (!results) continue;
+    await db
+      .update(updateJobs)
+      .set({
+        status: "completed",
+        results,
+        note: job.note ?? "The site didn't confirm the end of this job; the results come from its next report.",
+        finishedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(and(eq(updateJobs.id, job.id), inArray(updateJobs.status, [...ACTIVE_JOB_STATUSES])));
+  }
+}
+
 /** Mark jobs the site stopped reporting on as failed, so new ones can start. */
 export async function expireStaleJobs(siteIds: string[]) {
   if (siteIds.length === 0) return;
+  await reconcileQuietJobs(siteIds);
   const now = Date.now();
   await db
     .update(updateJobs)
