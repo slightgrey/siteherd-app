@@ -277,8 +277,10 @@ export function updatedSelf(results: Pick<UpdateResult, "type" | "id" | "status"
   return results.some((r) => r.type === "plugin" && slugOf(r.id) === SELF_SLUG && (r.status === "updated" || r.status === "rolled_back"));
 }
 
-// Long enough for the job's own final report to have been sent first.
-const SELF_UPDATE_RESYNC_DELAY_MS = 20_000;
+// Long enough for the job's own final report to have been sent first, and past
+// the plugin's once-a-minute limit on forced update checks (a Resync right
+// before the update would otherwise make this one skip the check).
+const SELF_UPDATE_RESYNC_DELAY_MS = 75_000;
 
 /**
  * After WP Siteherd updates itself, the request that ran the update still has
