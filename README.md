@@ -122,7 +122,7 @@ Settings, all optional:
 - **PostgreSQL** listening on localhost, with a database and role for the app.
 - **A system user `siteherd`.** `/opt/siteherd` is owned by `root:siteherd`, and `/opt/siteherd/shared/cache` is writable by `siteherd`.
 - **`/etc/siteherd.env`** (root-only, mode 600) with the environment variables above, plus:
-  - `AUTH_TRUST_HOST=true` (behind a proxy);
+  - `AUTH_TRUST_HOST=true` and `AUTH_URL=<public URL>` (behind a proxy; without `AUTH_URL`, login redirects point at the internal address);
   - `NODE_ENV=production`;
   - `PORT=3100` and `HOSTNAME=127.0.0.1`.
 - **A systemd unit** running `node /opt/siteherd/current/server.js` as `siteherd`, with `EnvironmentFile=/etc/siteherd.env`.
