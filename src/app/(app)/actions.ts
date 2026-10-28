@@ -118,6 +118,7 @@ export async function resyncSite(siteId: string): Promise<{ ok: true } | { ok: f
   try {
     // Checking wordpress.org for updates can take a while on slow hosts.
     const res = await callSite(site, "POST", "/sync", {}, 60_000);
+    if (res.status === 403) return { ok: false, error: "The site's firewall or security plugin blocked the dashboard (HTTP 403). Allow requests to /wp-json/siteherd/ from the dashboard's server." };
     if (res.status === 404) return { ok: false, error: "Update the WP Siteherd plugin on this site to 0.6.0 or later to resync." };
     if (res.status === 401) return { ok: false, error: "The site rejected the request. Is the plugin connected with this site's key?" };
     if (res.status !== 200) return { ok: false, error: `The site answered with HTTP ${res.status}.` };

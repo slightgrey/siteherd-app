@@ -427,6 +427,8 @@ function isUniqueViolation(e: unknown): boolean {
   return code(e) === "23505" || (e instanceof Error && code(e.cause) === "23505");
 }
 
+const SITE_BLOCKED = "The site's firewall or security plugin blocked the dashboard (HTTP 403). Allow requests to /wp-json/siteherd/ from the dashboard's server.";
+
 /** The request body the plugin's /update endpoint expects for this job. */
 function sitePayload(job: Pick<UpdateJob, "id" | "kind" | "items">) {
   if (job.kind === "rollback") {
@@ -463,6 +465,7 @@ async function dispatch(
       return { ok: false, error: "The site is still finishing another update. This one will start after it.", busy: true };
     }
     if (res.status === 401) return fail("The site rejected the request. Is the plugin connected with this site's key?");
+    if (res.status === 403) return fail(SITE_BLOCKED);
     if (res.status === 404) return fail("The site's WP Siteherd plugin is too old for remote updates. Update it to 0.4.0 or later.");
     if (res.status === 400) return fail("The site couldn't accept this request. Its WP Siteherd plugin may be too old.");
     return fail(`The site answered with HTTP ${res.status}.`);

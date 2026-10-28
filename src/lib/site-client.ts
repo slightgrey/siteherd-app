@@ -22,6 +22,8 @@ function siteCa() {
 
 export type SiteResponse = { status: number; body: unknown };
 
+const USER_AGENT = `WP-Siteherd-Dashboard/1.0${process.env.APP_URL ? ` (+${process.env.APP_URL})` : ""}`;
+
 export function callSite(
   site: { id: string; url: string; secret: string },
   method: "GET" | "POST",
@@ -44,6 +46,9 @@ export function callSite(
         // Added to Node's defaults (bundled + NODE_EXTRA_CA_CERTS), not instead of them.
         ...(ca && url.protocol === "https:" ? { ca: [...getCACertificates("default"), ca] } : {}),
         headers: {
+          // node:https sends no User-Agent by default, and many host firewalls
+          // (LiteSpeed/Imunify, ModSecurity rules) answer 403 to requests without one.
+          "user-agent": USER_AGENT,
           "content-type": "application/json",
           "content-length": Buffer.byteLength(raw),
           [HEADER_SITE]: site.id,
