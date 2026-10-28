@@ -5,7 +5,7 @@ import { db } from "@/db";
 import { updateJobs } from "@/db/schema";
 import { authenticateSiteRequest, jsonError, parseJsonObject } from "@/lib/site-auth";
 import { ACTIVE_JOB_STATUSES } from "@/lib/update-types";
-import { advanceQueue } from "@/lib/updates";
+import { advanceQueue, resyncAfterSelfUpdate, updatedSelf } from "@/lib/updates";
 
 // Pushed by Siteherd_Updater after each item and when the job finishes.
 const PushSchema = z.object({
@@ -62,5 +62,6 @@ export async function POST(request: Request) {
   if (!job) return jsonError(404, "no active job with that id");
   // Start the next queued job once the plugin has its answer (its job lock is already released).
   if (final) after(() => advanceQueue(auth.site.id));
+  if (final && updatedSelf(push.results)) after(() => resyncAfterSelfUpdate(auth.site.id));
   return Response.json({ ok: true });
 }

@@ -272,6 +272,32 @@ export async function startRollback(
 /** Folder of the WP Siteherd plugin itself, which can't be deactivated or deleted remotely. */
 export const SELF_SLUG = "wp-siteherd";
 
+/** Whether a finished job replaced WP Siteherd's own files. */
+export function updatedSelf(results: Pick<UpdateResult, "type" | "id" | "status">[]) {
+  return results.some((r) => r.type === "plugin" && slugOf(r.id) === SELF_SLUG && (r.status === "updated" || r.status === "rolled_back"));
+}
+
+// Long enough for the job's own final report to have been sent first.
+const SELF_UPDATE_RESYNC_DELAY_MS = 20_000;
+
+/**
+ * After WP Siteherd updates itself, the request that ran the update still has
+ * the old plugin code loaded. Plugins before 0.7.2 then record "update
+ * available" again and report the old version. A resync runs in a new request
+ * on the new code and corrects both. Called via after(); errors are only logged.
+ */
+export async function resyncAfterSelfUpdate(siteId: string) {
+  await new Promise((resolve) => setTimeout(resolve, SELF_UPDATE_RESYNC_DELAY_MS));
+  const site = await db.query.sites.findFirst({ where: eq(sites.id, siteId) });
+  if (!site) return;
+  try {
+    const res = await callSite(site, "POST", "/sync", {}, 60_000);
+    if (res.status !== 200) console.warn(`[self-update] resync of ${site.url} answered HTTP ${res.status}`);
+  } catch (e) {
+    console.warn(`[self-update] resync of ${site.url} failed:`, e instanceof Error ? e.message : e);
+  }
+}
+
 /**
  * Install (from wordpress.org), delete, activate or deactivate plugins on one
  * site the user owns. Checked against the latest report: installs need a slug
