@@ -97,6 +97,36 @@ Then open `/signup` and create your account with that email.
 | `npm run db:studio` | Browse the database |
 | `npm run report:test -- <connection key>` | Send a signed sample report, without needing a WordPress site |
 | `npm run vulns:sync` | Download the vulnerability database now (it otherwise refreshes itself once a day) |
+| `npm run reports:prune` | Delete old reports now (it otherwise runs once a day) |
+| `npm run deploy` | Build and deploy to your server (see below) |
+
+## Deploying
+
+The app builds as a self-contained Node server (`output: "standalone"`), so any Linux server with Node.js 20.9+ and PostgreSQL can run it. It's light enough for a 1 GB server: about 90 MB of memory while running.
+
+`npm run deploy` (`scripts/deploy.sh`) builds in a Linux container on your machine (Docker needed), so the server never has to build anything. It then:
+
+1. uploads the release to `/opt/siteherd/releases/<timestamp>`;
+2. applies database migrations through an SSH tunnel;
+3. points `/opt/siteherd/current` at the new release and restarts the `siteherd` systemd service;
+4. checks that the app answers. If it doesn't, it switches back to the previous release.
+
+The last 3 releases are kept, and `npm run deploy -- --rollback` switches back to the previous one.
+
+Settings, all optional:
+- `DEPLOY_HOST`: SSH host or `~/.ssh/config` alias.
+- `DEPLOY_URL`: the public URL to check.
+- `DEPLOY_CA_FILE`: an extra CA bundle for the build container, if antivirus intercepts HTTPS on your machine.
+
+**One-time server setup** expected by the script:
+- **PostgreSQL** listening on localhost, with a database and role for the app.
+- **A system user `siteherd`.** `/opt/siteherd` is owned by `root:siteherd`, and `/opt/siteherd/shared/cache` is writable by `siteherd`.
+- **`/etc/siteherd.env`** (root-only, mode 600) with the environment variables above, plus:
+  - `AUTH_TRUST_HOST=true` (behind a proxy);
+  - `NODE_ENV=production`;
+  - `PORT=3100` and `HOSTNAME=127.0.0.1`.
+- **A systemd unit** running `node /opt/siteherd/current/server.js` as `siteherd`, with `EnvironmentFile=/etc/siteherd.env`.
+- **A reverse proxy** (e.g. Nginx) with HTTPS, passing requests to `127.0.0.1:3100`. WordPress sites must reach the dashboard over HTTPS.
 
 ## How sites connect
 

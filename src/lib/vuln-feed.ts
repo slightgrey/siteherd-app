@@ -1,5 +1,9 @@
+import { Readable } from "node:stream";
+import type { ReadableStream as WebReadableStream } from "node:stream/web";
 import { eq, inArray } from "drizzle-orm";
 import { after } from "next/server";
+import { parser } from "stream-json";
+import { streamObject } from "stream-json/streamers/StreamObject";
 import { db, pg } from "@/db";
 import { feedState, vulnerabilities } from "@/db/schema";
 import type { Report } from "@/lib/report";
@@ -38,51 +42,61 @@ type FeedRecord = {
 
 type NewRow = typeof vulnerabilities.$inferInsert;
 
-function toRows(feed: Record<string, FeedRecord>): NewRow[] {
+/**
+ * Reads a feed (a JSON object of id → record) as a stream, one record at a
+ * time. The feed is 85 MB+; parsing it whole would need several hundred MB,
+ * too much for a small server.
+ */
+async function readRows(source: Readable): Promise<NewRow[]> {
   const rows = new Map<string, NewRow>();
-  for (const record of Object.values(feed)) {
-    // "Informational" records describe issues that aren't vulnerabilities in a version.
-    if (!record?.id || record.informational || !Array.isArray(record.software)) continue;
-    const score = record.cvss?.score != null ? Number(record.cvss.score) : null;
-    const published = record.published ? new Date(record.published.replace(" ", "T") + "Z") : null;
-    for (const sw of record.software) {
-      if (sw.type !== "plugin" && sw.type !== "theme" && sw.type !== "core") continue;
-      if (!sw.slug) continue;
-      const slug = sw.slug.toLowerCase();
-      const row: NewRow = {
-        id: record.id,
-        softwareType: sw.type,
-        slug,
-        title: record.title ?? "Unnamed vulnerability",
-        affected: Object.values(sw.affected_versions ?? {}),
-        patchedVersions: sw.patched_versions ?? [],
-        cvssScore: score !== null && Number.isFinite(score) ? score : null,
-        cvssRating: record.cvss?.rating ?? null,
-        cve: record.cve ?? null,
-        link: record.references?.find((r) => r.includes("wordfence.com/threat-intel")) ?? record.references?.[0] ?? null,
-        publishedAt: published && !Number.isNaN(published.getTime()) ? published : null,
-      };
-      rows.set(`${row.id}|${row.softwareType}|${slug}`, row);
-    }
-  }
+  const records = source.pipe(parser()).pipe(streamObject());
+  source.on("error", (error) => records.destroy(error));
+  for await (const { value } of records as AsyncIterable<{ key: string; value: FeedRecord }>) addRows(value, rows);
   return [...rows.values()];
 }
 
-async function download(kind: "production" | "scanner"): Promise<Record<string, FeedRecord>> {
+/** Adds a record's rows (one per affected plugin/theme/core) to `rows`. */
+function addRows(record: FeedRecord, rows: Map<string, NewRow>) {
+  // "Informational" records describe issues that aren't vulnerabilities in a version.
+  if (!record?.id || record.informational || !Array.isArray(record.software)) return;
+  const score = record.cvss?.score != null ? Number(record.cvss.score) : null;
+  const published = record.published ? new Date(record.published.replace(" ", "T") + "Z") : null;
+  for (const sw of record.software) {
+    if (sw.type !== "plugin" && sw.type !== "theme" && sw.type !== "core") continue;
+    if (!sw.slug) continue;
+    const slug = sw.slug.toLowerCase();
+    const row: NewRow = {
+      id: record.id,
+      softwareType: sw.type,
+      slug,
+      title: record.title ?? "Unnamed vulnerability",
+      affected: Object.values(sw.affected_versions ?? {}),
+      patchedVersions: sw.patched_versions ?? [],
+      cvssScore: score !== null && Number.isFinite(score) ? score : null,
+      cvssRating: record.cvss?.rating ?? null,
+      cve: record.cve ?? null,
+      link: record.references?.find((r) => r.includes("wordfence.com/threat-intel")) ?? record.references?.[0] ?? null,
+      publishedAt: published && !Number.isNaN(published.getTime()) ? published : null,
+    };
+    rows.set(`${row.id}|${row.softwareType}|${slug}`, row);
+  }
+}
+
+async function download(kind: "production" | "scanner"): Promise<NewRow[]> {
   const res = await fetch(`${FEED_URL}/${kind}`, {
     headers: { authorization: `Bearer ${process.env.WORDFENCE_API_KEY}` },
     cache: "no-store",
   });
-  if (!res.ok) throw new Error(`Wordfence ${kind} feed: HTTP ${res.status}`);
-  return (await res.json()) as Record<string, FeedRecord>;
+  if (!res.ok || !res.body) throw new Error(`Wordfence ${kind} feed: HTTP ${res.status}`);
+  return readRows(Readable.fromWeb(res.body as WebReadableStream));
 }
 
 /**
- * Downloads the feed and replaces the vulnerabilities table. `file` loads a
+ * Downloads the feed and replaces the vulnerabilities table. `source` reads a
  * previously downloaded feed instead (scripts/sync-vulns.mts --file).
  * Returns the number of rows stored, or null if another sync holds the lock.
  */
-export async function syncFeed(options: { feed?: Record<string, FeedRecord> } = {}): Promise<number | null> {
+export async function syncFeed(options: { source?: Readable } = {}): Promise<number | null> {
   // Advisory locks belong to a connection, so hold one connection for the whole sync.
   const lock = await pg.reserve();
   try {
@@ -94,16 +108,17 @@ export async function syncFeed(options: { feed?: Record<string, FeedRecord> } = 
         .values({ name: FEED, attemptedAt: new Date() })
         .onConflictDoUpdate({ target: feedState.name, set: { attemptedAt: new Date() } });
 
-      let feed = options.feed;
-      if (!feed) {
+      let rows: NewRow[];
+      if (options.source) {
+        rows = await readRows(options.source);
+      } else {
         try {
-          feed = await download("production");
+          rows = await download("production");
         } catch (error) {
           console.warn(`[vulns] ${(error as Error).message}; trying the scanner feed`);
-          feed = await download("scanner");
+          rows = await download("scanner");
         }
       }
-      const rows = toRows(feed);
       if (rows.length === 0) throw new Error("Wordfence feed was empty");
 
       await db.transaction(async (tx) => {

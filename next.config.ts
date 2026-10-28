@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // A self-contained server (server.js + only the needed node_modules), for deploying.
+  output: "standalone",
   cacheComponents: true,
   partialPrefetching: true,
   redirects() {

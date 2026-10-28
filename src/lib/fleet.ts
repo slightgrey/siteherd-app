@@ -6,6 +6,7 @@ import { reports, sites } from "@/db/schema";
 import { loadExclusions } from "@/lib/exclusions";
 import { integrityProblems, parseReport, pendingUpdates } from "@/lib/report";
 import { requireUser } from "@/lib/session";
+import { ensureReportsPruned } from "@/lib/retention";
 import { ensureFreshFeed, loadVulns } from "@/lib/vuln-feed";
 import type { VulnerableItem } from "@/lib/vulnerabilities";
 
@@ -31,7 +32,7 @@ export async function loadFleet() {
     report: parseReport(latest[0]?.payload),
     excluded: exclusions.get(site.id)!,
   }));
-  await ensureFreshFeed();
+  await Promise.all([ensureFreshFeed(), ensureReportsPruned()]);
   const vulns = await loadVulns(parsed);
   return { now, sites: parsed.map((site) => ({ ...site, vulns: vulns.get(site.id)! })) };
 }

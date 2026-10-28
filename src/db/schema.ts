@@ -159,7 +159,7 @@ export const vulnerabilities = pgTable(
   (t) => [primaryKey({ columns: [t.id, t.softwareType, t.slug] }), index("vulnerabilities_slug_idx").on(t.softwareType, t.slug)],
 );
 
-// Bookkeeping for external data feeds (currently just "wordfence").
+// Bookkeeping for background jobs: the "wordfence" feed sync and "report_retention".
 export const feedState = pgTable("feed_state", {
   name: text("name").primaryKey(),
   syncedAt: timestamp("synced_at", { withTimezone: true }),
