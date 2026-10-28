@@ -67,7 +67,7 @@ async function reconcileQuietJobs(siteIds: string[]) {
     const report = latest && latest.receivedAt > job.createdAt ? parseReport(latest.payload) : null;
     const results = report ? inferJobResults(job, report) : null;
     if (!results) continue;
-    await db
+    const [done] = await db
       .update(updateJobs)
       .set({
         status: "completed",
@@ -76,7 +76,25 @@ async function reconcileQuietJobs(siteIds: string[]) {
         finishedAt: new Date(),
         updatedAt: new Date(),
       })
-      .where(and(eq(updateJobs.id, job.id), inArray(updateJobs.status, [...ACTIVE_JOB_STATUSES])));
+      .where(and(eq(updateJobs.id, job.id), inArray(updateJobs.status, [...ACTIVE_JOB_STATUSES])))
+      .returning({ id: updateJobs.id });
+    if (done) await releaseSiteJob(job.siteId, job.id);
+  }
+}
+
+/**
+ * Tell the site's plugin (0.7.3+) to drop its lock for a job we've confirmed,
+ * so the next queued job can start without waiting for the lock to go stale.
+ * Older plugins answer 404; the site then frees the lock on its own later.
+ */
+async function releaseSiteJob(siteId: string, jobId: string) {
+  const site = await db.query.sites.findFirst({ where: eq(sites.id, siteId) });
+  if (!site) return;
+  try {
+    const res = await callSite(site, "POST", "/update/release", { job_id: jobId }, 10_000);
+    if (res.status !== 200 && res.status !== 404) console.warn(`[jobs] release on ${site.url} answered HTTP ${res.status}`);
+  } catch (e) {
+    console.warn(`[jobs] release on ${site.url} failed:`, e instanceof Error ? e.message : e);
   }
 }
 
