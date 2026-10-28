@@ -4,6 +4,7 @@ import { EmptyState, PageHeader } from "@/components/page-header";
 import { IntegrityBadge, ToneBadge } from "@/components/report-badges";
 import { timeAgo } from "@/components/site-status";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { VulnerabilitiesCard, groupFleetVulns } from "@/components/vulnerabilities-card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { loadFleet } from "@/lib/fleet";
 import { integrityProblems } from "@/lib/report";
@@ -13,7 +14,7 @@ export const metadata = { title: "Security · WP Siteherd" };
 export default function SecurityPage() {
   return (
     <>
-      <PageHeader title="Security" description="File integrity and failed logins across all your sites." />
+      <PageHeader title="Security" description="Known vulnerabilities, file integrity and failed logins across all your sites." />
       <Suspense fallback={<p className="mt-8 text-sm text-muted-foreground">Loading…</p>}>
         <SecurityOverview />
       </Suspense>
@@ -41,6 +42,7 @@ async function SecurityOverview() {
 
   return (
     <div className="mt-6 grid gap-6">
+      <VulnerabilitiesCard groups={groupFleetVulns(reported)} now={now} updatesHref="/updates/plugins" />
       <Card>
         <CardHeader>
           <CardTitle>File integrity</CardTitle>

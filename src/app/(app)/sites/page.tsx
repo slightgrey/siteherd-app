@@ -15,7 +15,7 @@ export const metadata = { title: "Sites · WP Siteherd" };
 
 const badgeLink = "rounded-full outline-none hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring/50";
 
-/** Section of the site's Files & logins page to open: core files, unless only plugin files changed. */
+/** Section of the site's Security page to open: core files, unless only plugin files changed. */
 function filesAnchor(report: Report) {
   const problems = integrityProblems(report.integrity);
   return problems && problems.coreFiles === 0 && !problems.coreError && problems.plugins.length > 0 ? "plugin-files" : "core-files";

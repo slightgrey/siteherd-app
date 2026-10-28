@@ -8,11 +8,13 @@ import { rollbackTarget } from "@/lib/rollback";
 import { reports, sites, updateJobs, type UpdateJob } from "@/db/schema";
 import { editedPlugins, parseReport, pendingUpdates, type Report } from "@/lib/report";
 import { callSite } from "@/lib/site-client";
+import { slugOf } from "@/lib/vulnerabilities";
 import {
   ACTIVE_JOB_STATUSES,
   PENDING_JOB_STATUSES,
   itemJobStates,
   itemKey,
+  type PluginAction,
   type UpdateItem,
   type UpdateResult,
   type UpdateType,
@@ -267,6 +269,62 @@ export async function startRollback(
   return enqueue(site, { siteId: site.id, userId, kind: "rollback", items });
 }
 
+/** Folder of the WP Siteherd plugin itself, which can't be deactivated or deleted remotely. */
+export const SELF_SLUG = "wp-siteherd";
+
+/**
+ * Install (from wordpress.org), delete, activate or deactivate plugins on one
+ * site the user owns. Checked against the latest report: installs need a slug
+ * that isn't installed yet, the others need an installed plugin in the right state.
+ */
+export async function startPluginAction(
+  userId: string,
+  siteId: string,
+  kind: PluginAction,
+  requested: { id: string; name?: string; activate?: boolean }[],
+): Promise<StartResult> {
+  const site = await db.query.sites.findFirst({
+    where: and(eq(sites.id, siteId), eq(sites.userId, userId)),
+    with: { reports: { orderBy: [desc(reports.receivedAt)], limit: 1 } },
+  });
+  if (!site) return { ok: false, error: "Site not found." };
+  const report = parseReport(site.reports[0]?.payload);
+  if (!report) return { ok: false, error: "This site hasn't reported yet." };
+  // Older plugins don't know these actions and would treat the job as a normal update.
+  if (report.schema < 6) {
+    return { ok: false, error: "Update the WP Siteherd plugin on this site to 0.7.0 or later to install, delete, activate or deactivate plugins." };
+  }
+
+  const inQueue = await itemsInQueue(site.id);
+  const installed = new Map(report.plugins.map((p) => [p.file, p]));
+  const installedSlugs = new Set(report.plugins.map((p) => slugOf(p.file)));
+  const items: UpdateItem[] = [];
+  for (const r of requested) {
+    if (kind === "install") {
+      const slug = r.id.trim().toLowerCase();
+      if (!/^[a-z0-9-]+$/.test(slug)) return { ok: false, error: `"${r.id}" isn't a wordpress.org plugin slug.` };
+      if (installedSlugs.has(slug)) return { ok: false, error: `${r.name || slug} is already installed on this site.` };
+      if (inQueue.has(itemKey({ type: "plugin", id: slug }))) continue;
+      items.push({ type: "plugin", id: slug, name: r.name || slug, from: "", to: "", activate: !!r.activate });
+      continue;
+    }
+    const plugin = installed.get(r.id);
+    if (!plugin) return { ok: false, error: "That plugin isn't installed on this site (any more)." };
+    const name = plugin.name || plugin.file;
+    if (slugOf(plugin.file) === SELF_SLUG && kind !== "activate") {
+      return { ok: false, error: "WP Siteherd can't deactivate or delete itself. Do that in wp-admin." };
+    }
+    if (kind === "activate" && plugin.active) continue;
+    if (kind === "deactivate" && !plugin.active) continue;
+    if (inQueue.has(itemKey({ type: "plugin", id: plugin.file }))) continue;
+    items.push({ type: "plugin", id: plugin.file, name, from: plugin.version, to: plugin.version });
+  }
+  if (items.length === 0) {
+    return { ok: false, error: kind === "activate" || kind === "deactivate" ? `Nothing to ${kind}.` : "Already in the queue." };
+  }
+  return enqueue(site, { siteId: site.id, userId, kind, items });
+}
+
 /** Remove a job that is still waiting in the queue (not sent to the site yet). */
 export async function cancelWaitingJob(userId: string, siteId: string, jobId: string): Promise<boolean> {
   const site = await db.query.sites.findFirst({ where: and(eq(sites.id, siteId), eq(sites.userId, userId)) });
@@ -371,9 +429,14 @@ function isUniqueViolation(e: unknown): boolean {
 
 /** The request body the plugin's /update endpoint expects for this job. */
 function sitePayload(job: Pick<UpdateJob, "id" | "kind" | "items">) {
-  return job.kind === "rollback"
-    ? { job_id: job.id, action: "rollback", items: job.items.map(({ type, id, to }) => ({ type, id, version: to })) }
-    : { job_id: job.id, items: job.items.map(({ type, id }) => ({ type, id })) };
+  if (job.kind === "rollback") {
+    return { job_id: job.id, action: "rollback", items: job.items.map(({ type, id, to }) => ({ type, id, version: to })) };
+  }
+  if (job.kind === "install") {
+    return { job_id: job.id, action: "install", items: job.items.map(({ type, id, activate }) => ({ type, id, activate: !!activate })) };
+  }
+  if (job.kind === "update") return { job_id: job.id, items: job.items.map(({ type, id }) => ({ type, id })) };
+  return { job_id: job.id, action: job.kind, items: job.items.map(({ type, id }) => ({ type, id })) };
 }
 
 /**

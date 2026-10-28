@@ -7,6 +7,7 @@ import { cancelQueuedJob } from "@/app/(app)/actions";
 import { JobItems, JobStatusBadge, type ClientJob } from "@/components/update-status";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { JobKind } from "@/lib/update-types";
 
 /**
  * The site's running update/rollback with live progress, then the jobs queued
@@ -34,12 +35,10 @@ export function JobQueue({ siteId, jobs }: { siteId: string; jobs: ClientJob[] }
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {active.kind === "rollback" ? "Rollback in progress" : "Update in progress"} <JobStatusBadge job={active} />
+              {ACTIVE_TITLES[active.kind]} <JobStatusBadge job={active} />
             </CardTitle>
             <CardDescription>
-              {active.kind === "rollback"
-                ? "The current version is backed up, the earlier version is put back, then the site is checked. If it stops loading, the current version is restored."
-                : "Each plugin and theme is backed up, updated, then the site is checked. If it stops loading, the previous version is restored automatically."}
+              {ACTIVE_DESCRIPTIONS[active.kind]}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -81,9 +80,10 @@ function QueuedJob({ siteId, job, position }: { siteId: string; job: ClientJob; 
         {job.items.map((item) => (
           <div key={`${item.type}:${item.id}`} className="flex flex-wrap items-center gap-2">
             <span className="font-medium">
-              {job.kind === "rollback" ? "Roll back" : "Update"} {item.name}
+              {QUEUED_VERBS[job.kind]} {item.name}
+              {job.kind === "install" && item.activate && " and activate"}
             </span>
-            {item.type !== "translations" && (
+            {item.type !== "translations" && (job.kind === "update" || job.kind === "rollback") && (
               <span className="font-mono text-xs text-muted-foreground">
                 {item.from} → {item.to}
               </span>
@@ -98,3 +98,30 @@ function QueuedJob({ siteId, job, position }: { siteId: string; job: ClientJob; 
     </li>
   );
 }
+
+const ACTIVE_TITLES: Record<JobKind, string> = {
+  update: "Update in progress",
+  rollback: "Rollback in progress",
+  install: "Installing",
+  delete: "Deleting",
+  activate: "Activating",
+  deactivate: "Deactivating",
+};
+
+const ACTIVE_DESCRIPTIONS: Record<JobKind, string> = {
+  update: "Each plugin and theme is backed up, updated, then the site is checked. If it stops loading, the previous version is restored automatically.",
+  rollback: "The current version is backed up, the earlier version is put back, then the site is checked. If it stops loading, the current version is restored.",
+  install: "Plugins are downloaded from wordpress.org and installed. If one is activated and the site stops loading, it is deactivated again.",
+  delete: "Each plugin is deactivated, a copy of its files is saved on the site for 30 days, then WordPress deletes it.",
+  activate: "Each plugin is activated, then the site is checked. If it stops loading, the plugin is deactivated again.",
+  deactivate: "Each plugin is deactivated.",
+};
+
+const QUEUED_VERBS: Record<JobKind, string> = {
+  update: "Update",
+  rollback: "Roll back",
+  install: "Install",
+  delete: "Delete",
+  activate: "Activate",
+  deactivate: "Deactivate",
+};

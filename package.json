@@ -12,7 +12,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "report:test": "tsx scripts/send-test-report.mts"
+    "report:test": "tsx scripts/send-test-report.mts",
+    "vulns:sync": "tsx --env-file=.env.local scripts/sync-vulns.mts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

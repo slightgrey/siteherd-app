@@ -33,7 +33,7 @@ async function SiteShell({ params, children }: { params: Promise<{ id: string }>
   const { id } = await params;
   const data = await loadSite(id);
   if (!data) notFound();
-  const { site, report, lastReport, now, state, excluded } = data;
+  const { site, report, lastReport, now, state, excluded, vulns } = data;
   const [labels, siteLabelIds, allSites, jobs] = await Promise.all([
     loadLabels(site.userId),
     loadSiteLabelIds([site.id]),
@@ -57,7 +57,8 @@ async function SiteShell({ params, children }: { params: Promise<{ id: string }>
         core: updates!.core ? 1 : 0,
         translations: updates!.translations,
         critical: report.health?.counts.critical ?? 0,
-        files: integrityProblems(report.integrity)?.total ?? 0,
+        // Changed files plus vulnerable plugins/themes/core.
+        files: (integrityProblems(report.integrity)?.total ?? 0) + vulns.length,
       }
     : null;
 

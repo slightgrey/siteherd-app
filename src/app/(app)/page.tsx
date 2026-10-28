@@ -1,4 +1,4 @@
-import { ArrowRight, CircleCheck, FileWarning, Globe, HeartPulse, KeyRound, Plus, RefreshCw } from "lucide-react";
+import { ArrowRight, CircleCheck, FileWarning, Globe, HeartPulse, KeyRound, Plus, RefreshCw, ShieldAlert } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -18,8 +18,8 @@ export const metadata = { title: "Dashboard · WP Siteherd" };
 // Same threshold as attentionReasons() uses to flag a single site.
 const MANY_FAILED_LOGINS = 20;
 
-// Spans in the 6-column xl grid: three cards on the first row, two wider ones below.
-const SPANS = ["xl:col-span-2", "xl:col-span-2", "xl:col-span-2", "xl:col-span-3", "sm:col-span-2 xl:col-span-3"];
+// Placeholder cards while the data loads (two rows of three on wide screens).
+const SKELETON_CARDS = [0, 1, 2, 3, 4, 5];
 
 export default function DashboardPage() {
   return (
@@ -108,15 +108,15 @@ function Stat({
 }
 
 function StatGrid({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">{children}</div>;
+  return <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">{children}</div>;
 }
 
 function OverviewSkeleton() {
   return (
     <div className="mt-6 grid gap-6">
       <StatGrid>
-        {SPANS.map((span) => (
-          <div key={span} className={cn("flex flex-col gap-5 rounded-2xl p-6 ring-1 ring-foreground/10", span)}>
+        {SKELETON_CARDS.map((n) => (
+          <div key={n} className="flex flex-col gap-5 rounded-2xl p-6 ring-1 ring-foreground/10">
             <div className="flex justify-between">
               <Skeleton className="h-4 w-28" />
               <Skeleton className="size-10 rounded-xl" />
@@ -153,6 +153,8 @@ async function Overview() {
   const critical = reports.reduce((n, r) => n + (r.health?.counts.critical ?? 0), 0);
   const changedFiles = reports.filter((r) => (integrityProblems(r.integrity)?.total ?? 0) > 0).length;
   const failedLogins = reports.reduce((n, r) => n + r.failed_logins_24h, 0);
+  const vulnerable = sites.reduce((n, s) => n + s.vulns.length, 0);
+  const sitesWithVulns = sites.filter((s) => s.vulns.length > 0).length;
 
   const attention = sites
     .map((site) => ({ site, reasons: attentionReasons(site) }))
@@ -168,7 +170,6 @@ async function Overview() {
           icon={Globe}
           tone={reporting === sites.length ? "good" : "warn"}
           hint={`${reporting} of ${sites.length} reporting`}
-          className={SPANS[0]}
         >
           <div className="h-1.5 overflow-hidden rounded-full bg-muted">
             <div className="h-full rounded-full bg-green-500" style={{ width: `${(reporting / sites.length) * 100}%` }} />
@@ -181,7 +182,14 @@ async function Overview() {
           icon={RefreshCw}
           tone={updates > 0 ? "warn" : "good"}
           hint={sitesWithUpdates ? `On ${sitesWithUpdates} ${sitesWithUpdates === 1 ? "site" : "sites"}` : "All up to date"}
-          className={SPANS[1]}
+        />
+        <Stat
+          label="Vulnerable plugins & themes"
+          value={vulnerable}
+          href="/security"
+          icon={ShieldAlert}
+          tone={vulnerable > 0 ? "bad" : "good"}
+          hint={vulnerable ? `On ${sitesWithVulns} ${sitesWithVulns === 1 ? "site" : "sites"}` : "No known vulnerabilities"}
         />
         <Stat
           label="Critical health issues"
@@ -190,7 +198,6 @@ async function Overview() {
           icon={HeartPulse}
           tone={critical > 0 ? "bad" : "good"}
           hint={critical ? "Needs fixing" : "None"}
-          className={SPANS[2]}
         />
         <Stat
           label="Sites with changed files"
@@ -199,7 +206,6 @@ async function Overview() {
           icon={FileWarning}
           tone={changedFiles > 0 ? "bad" : "good"}
           hint={changedFiles ? "Check for tampering" : "Files match wordpress.org"}
-          className={SPANS[3]}
         />
         <Stat
           label="Failed logins (24 h)"
@@ -208,7 +214,6 @@ async function Overview() {
           icon={KeyRound}
           tone={failedLogins >= MANY_FAILED_LOGINS ? "warn" : "neutral"}
           hint="Across all sites"
-          className={SPANS[4]}
         />
       </StatGrid>
 

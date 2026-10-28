@@ -1,12 +1,12 @@
-import { CheckCircle2, CircleDashed, Loader2, RotateCcw, XCircle, MinusCircle } from "lucide-react";
+import { CheckCircle2, CircleDashed, Download, Loader2, Power, PowerOff, RotateCcw, Trash2, XCircle, MinusCircle } from "lucide-react";
 import { ToneBadge } from "@/components/report-badges";
-import type { ItemJobState, UpdateItem, UpdateResult } from "@/lib/update-types";
+import type { ItemJobState, JobKind, UpdateItem, UpdateResult } from "@/lib/update-types";
 import { itemJobLabel, itemKey } from "@/lib/update-types";
 
 // Job as passed to client components (dates pre-formatted on the server).
 export type ClientJob = {
   id: string;
-  kind: "update" | "rollback";
+  kind: JobKind;
   status: "waiting" | "queued" | "running" | "completed" | "failed";
   items: UpdateItem[];
   results: UpdateResult[];
@@ -20,7 +20,40 @@ const resultLook: Record<UpdateResult["status"], { tone: "good" | "warn" | "bad"
   rolled_back: { tone: "warn", label: "Rolled back", icon: <RotateCcw className="size-4 text-amber-600 dark:text-amber-400" /> },
   failed: { tone: "bad", label: "Failed", icon: <XCircle className="size-4 text-red-600 dark:text-red-400" /> },
   skipped: { tone: "muted", label: "Skipped", icon: <MinusCircle className="size-4 text-muted-foreground" /> },
+  installed: { tone: "good", label: "Installed", icon: <Download className="size-4 text-green-600 dark:text-green-400" /> },
+  activated: { tone: "good", label: "Activated", icon: <Power className="size-4 text-green-600 dark:text-green-400" /> },
+  deactivated: { tone: "good", label: "Deactivated", icon: <PowerOff className="size-4 text-green-600 dark:text-green-400" /> },
+  deleted: { tone: "good", label: "Deleted", icon: <Trash2 className="size-4 text-green-600 dark:text-green-400" /> },
 };
+
+// Installing or activating a plugin that broke the site: it was deactivated again.
+const pluginActionLook: typeof resultLook = {
+  ...resultLook,
+  rolled_back: { tone: "warn", label: "Deactivated again", icon: <RotateCcw className="size-4 text-amber-600 dark:text-amber-400" /> },
+};
+
+const JOB_TITLES: Record<JobKind, string> = {
+  update: "Update run",
+  rollback: "Rollback",
+  install: "Install",
+  delete: "Delete",
+  activate: "Activate",
+  deactivate: "Deactivate",
+};
+
+const RUNNING_LABELS: Record<JobKind, string> = {
+  update: "Updating…",
+  rollback: "Rolling back…",
+  install: "Installing…",
+  delete: "Deleting…",
+  activate: "Activating…",
+  deactivate: "Deactivating…",
+};
+
+/** Version changes are shown for updates and rollbacks only. */
+function showsVersions(kind: JobKind) {
+  return kind === "update" || kind === "rollback";
+}
 
 // In a rollback run, "updated" means the old version is back, and "rolled_back"
 // means the site broke so the newer version was put back again.
@@ -32,7 +65,7 @@ const rollbackLook: typeof resultLook = {
 
 export function jobTitle(job: Pick<ClientJob, "kind" | "items">) {
   const n = job.items.length;
-  return `${job.kind === "rollback" ? "Rollback" : "Update run"} · ${n} ${n === 1 ? "item" : "items"}`;
+  return `${JOB_TITLES[job.kind]} · ${n} ${n === 1 ? "item" : "items"}`;
 }
 
 /** Row label for an item in an unfinished job. A null state means the request is still being sent. */
@@ -49,7 +82,7 @@ export function ItemJobBadge({ state }: { state: ItemJobState | null }) {
 export function JobStatusBadge({ job }: { job: ClientJob }) {
   if (job.status === "waiting") return <ToneBadge t="muted">Queued</ToneBadge>;
   if (job.status === "queued") return <ToneBadge t="muted">Starting…</ToneBadge>;
-  if (job.status === "running") return <ToneBadge t="warn">{job.kind === "rollback" ? "Rolling back…" : "Updating…"}</ToneBadge>;
+  if (job.status === "running") return <ToneBadge t="warn">{RUNNING_LABELS[job.kind]}</ToneBadge>;
   if (job.status === "failed") return <ToneBadge t="bad">Failed</ToneBadge>;
   const bad = job.results.some((r) => r.status === "failed" || r.status === "rolled_back");
   return bad ? <ToneBadge t="warn">Finished with problems</ToneBadge> : <ToneBadge t="good">Completed</ToneBadge>;
@@ -58,7 +91,7 @@ export function JobStatusBadge({ job }: { job: ClientJob }) {
 /** Per-item lines for a job: results so far, then the item in progress, then waiting ones. */
 export function JobItems({ job }: { job: ClientJob }) {
   const done = new Map(job.results.map((r) => [itemKey(r), r]));
-  const look = job.kind === "rollback" ? rollbackLook : resultLook;
+  const look = job.kind === "rollback" ? rollbackLook : showsVersions(job.kind) ? resultLook : pluginActionLook;
   // The plugin works through items in order: plugins, then themes, core, translations.
   const order = { plugin: 0, theme: 1, core: 2, translations: 3 };
   const current =
@@ -77,7 +110,7 @@ export function JobItems({ job }: { job: ClientJob }) {
           label = <ToneBadge t={l.tone}>{l.label}</ToneBadge>;
         } else if (current && itemKey(current) === itemKey(item)) {
           icon = <Loader2 className="size-4 animate-spin text-muted-foreground" />;
-          label = <span className="text-muted-foreground">Updating…</span>;
+          label = <span className="text-muted-foreground">{RUNNING_LABELS[job.kind]}</span>;
         } else if (job.status === "waiting" || job.status === "queued" || job.status === "running") {
           icon = <CircleDashed className="size-4 text-muted-foreground" />;
           label = <span className="text-muted-foreground">Waiting</span>;
@@ -93,7 +126,7 @@ export function JobItems({ job }: { job: ClientJob }) {
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-medium">{item.name}</span>
-                {item.type !== "translations" && (
+                {item.type !== "translations" && showsVersions(job.kind) && (
                   <span className="font-mono text-xs text-muted-foreground">
                     {from} → {to}
                   </span>

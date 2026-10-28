@@ -6,6 +6,8 @@ import { reports, sites } from "@/db/schema";
 import { loadExclusions } from "@/lib/exclusions";
 import { integrityProblems, parseReport, pendingUpdates } from "@/lib/report";
 import { requireUser } from "@/lib/session";
+import { ensureFreshFeed, loadVulns } from "@/lib/vuln-feed";
+import type { VulnerableItem } from "@/lib/vulnerabilities";
 
 /**
  * Every site of the current user with its latest parsed report. Used by the
@@ -23,15 +25,15 @@ export async function loadFleet() {
   });
   const exclusions = await loadExclusions(rows.map((r) => r.id));
   const now = Date.now();
-  return {
-    now,
-    sites: rows.map(({ reports: latest, ...site }) => ({
-      ...site,
-      state: siteState(site.lastReportAt, now),
-      report: parseReport(latest[0]?.payload),
-      excluded: exclusions.get(site.id)!,
-    })),
-  };
+  const parsed = rows.map(({ reports: latest, ...site }) => ({
+    ...site,
+    state: siteState(site.lastReportAt, now),
+    report: parseReport(latest[0]?.payload),
+    excluded: exclusions.get(site.id)!,
+  }));
+  await ensureFreshFeed();
+  const vulns = await loadVulns(parsed);
+  return { now, sites: parsed.map((site) => ({ ...site, vulns: vulns.get(site.id)! })) };
 }
 
 export type FleetSite = Awaited<ReturnType<typeof loadFleet>>["sites"][number];
@@ -40,9 +42,13 @@ export type AttentionReason = { text: string; severity: "bad" | "warn" | "muted"
 
 /** Reasons a site needs attention, most urgent first. Empty when all is well. */
 export function attentionReasons(
-  site: Pick<FleetSite, "state" | "report" | "excluded">,
+  site: Pick<FleetSite, "state" | "report" | "excluded"> & { vulns?: VulnerableItem[] },
 ): AttentionReason[] {
   const reasons: AttentionReason[] = [];
+  const vulnerable = site.vulns?.length ?? 0;
+  if (vulnerable > 0) {
+    reasons.push({ text: `${vulnerable} vulnerable ${vulnerable === 1 ? "item" : "items"}`, severity: "bad" });
+  }
   if (site.state === "never") reasons.push({ text: "Not connected yet", severity: "muted" });
   if (site.state === "stale") reasons.push({ text: "Stopped reporting", severity: "bad" });
   const r = site.report;

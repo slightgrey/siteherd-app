@@ -2,8 +2,18 @@
 
 export type UpdateType = "plugin" | "theme" | "core" | "translations";
 
-/** What was requested: plugin file, theme stylesheet, "core", or "translations" (every pending language pack). */
-export type UpdateItem = { type: UpdateType; id: string; name: string; from: string; to: string };
+/**
+ * What was requested: plugin file, theme stylesheet, "core", or "translations"
+ * (every pending language pack). Install items use the wordpress.org slug as id
+ * (the file isn't known until it's installed).
+ */
+export type UpdateItem = { type: UpdateType; id: string; name: string; from: string; to: string; activate?: boolean };
+
+export const JOB_KINDS = ["update", "rollback", "install", "delete", "activate", "deactivate"] as const;
+export type JobKind = (typeof JOB_KINDS)[number];
+/** Job kinds that manage plugins rather than change versions (plugin 0.7.0+, report schema 6). */
+export const PLUGIN_ACTIONS = ["install", "delete", "activate", "deactivate"] as const;
+export type PluginAction = (typeof PLUGIN_ACTIONS)[number];
 
 /** Per-item outcome pushed by the plugin (Siteherd_Updater::outcome). */
 export type UpdateResult = {
@@ -12,7 +22,7 @@ export type UpdateResult = {
   name: string;
   from: string | null;
   to: string | null;
-  status: "updated" | "failed" | "rolled_back" | "skipped";
+  status: "updated" | "failed" | "rolled_back" | "skipped" | "installed" | "deleted" | "activated" | "deactivated";
   message: string | null;
 };
 
@@ -26,10 +36,10 @@ export function itemKey(item: { type: UpdateType; id: string }) {
 }
 
 /** What an unfinished job is doing to an item, for row labels. */
-export type ItemJobState = { kind: "update" | "rollback"; waiting: boolean };
+export type ItemJobState = { kind: JobKind; waiting: boolean };
 
 /** Item key → state, for items in unfinished jobs (the active one wins over a waiting one). */
-export function itemJobStates(jobs: { kind: "update" | "rollback"; status: string; items: { type: UpdateType; id: string }[] }[]) {
+export function itemJobStates(jobs: { kind: JobKind; status: string; items: { type: UpdateType; id: string }[] }[]) {
   const states: Record<string, ItemJobState> = {};
   for (const job of jobs) {
     if (!(PENDING_JOB_STATUSES as readonly string[]).includes(job.status)) continue;
@@ -44,5 +54,14 @@ export function itemJobStates(jobs: { kind: "update" | "rollback"; status: strin
 
 export function itemJobLabel(state: ItemJobState) {
   if (state.waiting) return "Queued";
-  return state.kind === "rollback" ? "Rolling back…" : "Updating…";
+  return JOB_LABELS[state.kind];
 }
+
+const JOB_LABELS: Record<JobKind, string> = {
+  update: "Updating…",
+  rollback: "Rolling back…",
+  install: "Installing…",
+  delete: "Deleting…",
+  activate: "Activating…",
+  deactivate: "Deactivating…",
+};

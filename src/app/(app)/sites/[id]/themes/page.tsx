@@ -23,6 +23,7 @@ async function Themes({ data }: { data: SiteData & { report: Report } }) {
   const unfinished = jobs.filter(isPending);
   const history = itemHistory(jobs, now);
 
+  const vulns = new Map(data.vulns.map((v) => [itemKey(v), v.vulns]));
   const rows: ItemRow[] = report.themes
     .map((t) => {
       const key = itemKey({ type: "theme", id: t.stylesheet });
@@ -39,6 +40,7 @@ async function Themes({ data }: { data: SiteData & { report: Report } }) {
         slug: null,
         history: entries,
         rollback: rollbackTarget(report, { type: "theme", id: t.stylesheet }, t.version, entries),
+        vulns: vulns.get(key) ?? [],
       };
     })
     // The active theme first, then by name.

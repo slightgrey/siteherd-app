@@ -16,7 +16,14 @@ import {
 import type { HistoryEntry } from "@/lib/updates";
 import { rollbackItem } from "../../actions";
 
+const PLUGIN_ACTION_DONE = { installed: "Installed", deleted: "Deleted", activated: "Activated", deactivated: "Deactivated" } as const;
+
 function headline(e: HistoryEntry) {
+  if (e.kind !== "update" && e.kind !== "rollback") {
+    if (e.status in PLUGIN_ACTION_DONE) return PLUGIN_ACTION_DONE[e.status as keyof typeof PLUGIN_ACTION_DONE];
+    if (e.status === "rolled_back") return "Deactivated again: it broke the site";
+    return `${e.kind[0].toUpperCase()}${e.kind.slice(1)} failed`;
+  }
   if (e.kind === "rollback") {
     if (e.status === "updated") return `Rolled back to ${e.to}`;
     if (e.status === "rolled_back") return `Rollback to ${e.to} undone`;

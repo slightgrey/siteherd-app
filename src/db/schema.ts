@@ -1,8 +1,11 @@
 import { relations, sql } from "drizzle-orm";
-import type { UpdateItem, UpdateResult } from "../lib/update-types";
+import { JOB_KINDS, type UpdateItem, type UpdateResult } from "../lib/update-types";
+import type { VersionRange } from "../lib/vulnerabilities";
 import {
   bigserial,
+  doublePrecision,
   index,
+  integer,
   jsonb,
   pgTable,
   primaryKey,
@@ -64,7 +67,8 @@ export const updateJobs = pgTable(
       .references(() => sites.id, { onDelete: "cascade" }),
     userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
     // "rollback" jobs go back to an earlier version (item.to is the older version).
-    kind: text("kind", { enum: ["update", "rollback"] }).notNull().default("update"),
+    // "install" / "delete" / "activate" / "deactivate" manage plugins (schema 6+).
+    kind: text("kind", { enum: JOB_KINDS }).notNull().default("update"),
     // "waiting": queued in the dashboard behind the site's active job, not sent
     // yet (see advanceQueue()). "queued": sent to the site, not started.
     status: text("status", { enum: ["waiting", "queued", "running", "completed", "failed"] }).notNull().default("queued"),
@@ -134,6 +138,35 @@ export const usersRelations = relations(users, ({ many }) => ({
   sites: many(sites),
   labels: many(labels),
 }));
+
+// Known vulnerabilities from the Wordfence Intelligence feed, one row per
+// affected piece of software. Replaced wholesale by syncFeed() (src/lib/vuln-feed.ts).
+export const vulnerabilities = pgTable(
+  "vulnerabilities",
+  {
+    id: text("id").notNull(),
+    softwareType: text("software_type", { enum: ["plugin", "theme", "core"] }).notNull(),
+    slug: text("slug").notNull(),
+    title: text("title").notNull(),
+    affected: jsonb("affected").$type<VersionRange[]>().notNull(),
+    patchedVersions: jsonb("patched_versions").$type<string[]>().notNull(),
+    cvssScore: doublePrecision("cvss_score"),
+    cvssRating: text("cvss_rating"),
+    cve: text("cve"),
+    link: text("link"),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+  },
+  (t) => [primaryKey({ columns: [t.id, t.softwareType, t.slug] }), index("vulnerabilities_slug_idx").on(t.softwareType, t.slug)],
+);
+
+// Bookkeeping for external data feeds (currently just "wordfence").
+export const feedState = pgTable("feed_state", {
+  name: text("name").primaryKey(),
+  syncedAt: timestamp("synced_at", { withTimezone: true }),
+  count: integer("count").notNull().default(0),
+  error: text("error"),
+  attemptedAt: timestamp("attempted_at", { withTimezone: true }),
+});
 
 export const sitesRelations = relations(sites, ({ one, many }) => ({
   user: one(users, { fields: [sites.userId], references: [users.id] }),

@@ -19,7 +19,7 @@ const PushSchema = z.object({
         name: z.string().max(300).catch(""),
         from: z.string().max(50).nullable().catch(null),
         to: z.string().max(50).nullable().catch(null),
-        status: z.enum(["updated", "failed", "rolled_back", "skipped"]),
+        status: z.enum(["updated", "failed", "rolled_back", "skipped", "installed", "deleted", "activated", "deactivated"]),
         message: z.string().max(2000).nullable().catch(null),
       }),
     )

@@ -8,6 +8,7 @@ import { loadExclusions } from "@/lib/exclusions";
 import { isUuid } from "@/lib/ids";
 import { parseReport } from "@/lib/report";
 import { requireUser } from "@/lib/session";
+import { ensureFreshFeed, loadVulns } from "@/lib/vuln-feed";
 
 /**
  * One site of the current user with its latest report, or null if it doesn't
@@ -26,13 +27,17 @@ export const loadSite = cache(async (id: string) => {
   const { reports: latest, ...site } = row;
   const excluded = (await loadExclusions([site.id])).get(site.id)!;
   const now = Date.now();
+  const report = parseReport(latest[0]?.payload);
+  await ensureFreshFeed();
+  const vulns = (await loadVulns([{ id: site.id, report }])).get(site.id)!;
   return {
     site,
+    vulns,
     now,
     excluded,
     state: siteState(site.lastReportAt, now),
     lastReport: latest[0] ?? null,
-    report: parseReport(latest[0]?.payload),
+    report,
   };
 });
 

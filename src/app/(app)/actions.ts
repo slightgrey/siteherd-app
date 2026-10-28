@@ -12,7 +12,9 @@ import { createLabel, deleteLabel, setSiteLabel, updateLabel, type LabelResult }
 import { requireUser } from "@/lib/session";
 import { callSite } from "@/lib/site-client";
 import { setExclusion } from "@/lib/exclusions";
-import { cancelWaitingJob, startRollback, startUpdate, type StartResult } from "@/lib/updates";
+import { PLUGIN_ACTIONS } from "@/lib/update-types";
+import { cancelWaitingJob, startPluginAction, startRollback, startUpdate, type StartResult } from "@/lib/updates";
+import { searchPlugins, type WporgPlugin } from "@/lib/wporg";
 import { z } from "zod";
 
 export type SiteFormState = { error?: string; name?: string; url?: string } | undefined;
@@ -76,6 +78,31 @@ export async function rollbackItem(siteId: string, item: unknown, version: unkno
   const parsedVersion = z.string().regex(/^[0-9A-Za-z][0-9A-Za-z.\-+_]{0,39}$/).safeParse(version);
   if (!isUuid(siteId) || !parsedItem.success || !parsedVersion.success) return { ok: false, error: "Invalid request." };
   return startRollback(user.id, siteId, parsedItem.data, parsedVersion.data);
+}
+
+/** Install, delete, activate or deactivate plugins on one site. */
+export async function pluginAction(siteId: string, kind: unknown, items: unknown): Promise<StartResult> {
+  const user = await requireUser();
+  const parsedKind = z.enum(PLUGIN_ACTIONS).safeParse(kind);
+  const parsedItems = z
+    .array(z.object({ id: z.string().min(1).max(200), name: z.string().max(300).optional(), activate: z.boolean().optional() }))
+    .min(1)
+    .max(50)
+    .safeParse(items);
+  if (!isUuid(siteId) || !parsedKind.success || !parsedItems.success) return { ok: false, error: "Invalid request." };
+  return startPluginAction(user.id, siteId, parsedKind.data, parsedItems.data);
+}
+
+/** Search the wordpress.org plugin directory (for installing on a site). */
+export async function searchWporgPlugins(query: unknown): Promise<{ ok: true; plugins: WporgPlugin[] } | { ok: false; error: string }> {
+  await requireUser();
+  const parsed = z.string().trim().min(2).max(100).safeParse(query);
+  if (!parsed.success) return { ok: true, plugins: [] };
+  try {
+    return { ok: true, plugins: await searchPlugins(parsed.data) };
+  } catch (e) {
+    return { ok: false, error: `Couldn't search wordpress.org: ${e instanceof Error ? e.message : String(e)}` };
+  }
 }
 
 /**

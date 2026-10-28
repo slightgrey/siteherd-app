@@ -3,7 +3,9 @@ import { editedPlugins, type Report } from "@/lib/report";
 import { rollbackTarget } from "@/lib/rollback";
 import type { SiteData } from "@/lib/site";
 import { itemJobStates, itemKey } from "@/lib/update-types";
-import { isPending, itemHistory, loadJobs, toClientJob } from "@/lib/updates";
+import { SELF_SLUG, isPending, itemHistory, loadJobs, toClientJob } from "@/lib/updates";
+import { slugOf } from "@/lib/vulnerabilities";
+import { AddPluginSheet } from "../add-plugin-sheet";
 import { ItemList, type ItemRow } from "../item-list";
 import { SectionTitle, WithSite } from "../sections";
 
@@ -23,8 +25,11 @@ async function Plugins({ data }: { data: SiteData & { report: Report } }) {
   const unfinished = jobs.filter(isPending);
   const history = itemHistory(jobs, now);
   const edited = editedPlugins(report);
+  // Older plugins ignore the install/delete/activate/deactivate actions (schema 6 = plugin 0.7.0).
+  const canManage = report.schema >= 6;
   const integrity = new Map(report.integrity?.plugins.map((p) => [p.file, p.status]) ?? []);
 
+  const vulns = new Map(data.vulns.map((v) => [itemKey(v), v.vulns]));
   const rows: ItemRow[] = report.plugins
     .map((p) => {
       const key = itemKey({ type: "plugin", id: p.file });
@@ -43,19 +48,29 @@ async function Plugins({ data }: { data: SiteData & { report: Report } }) {
         slug: (status === "ok" || status === "issues") && p.file.includes("/") ? p.file.split("/")[0] : null,
         history: entries,
         rollback: rollbackTarget(report, { type: "plugin", id: p.file }, p.version, entries),
+        vulns: vulns.get(key) ?? [],
+        isSelf: slugOf(p.file) === SELF_SLUG,
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <>
-      <SectionTitle title="Plugins" />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <SectionTitle title="Plugins" />
+        {canManage && <AddPluginSheet siteId={site.id} installed={report.plugins.map((p) => slugOf(p.file))} />}
+      </div>
       {unfinished.length > 0 && (
         <div className="mb-6">
           <JobQueue siteId={site.id} jobs={unfinished.map((j) => toClientJob(j, now))} />
         </div>
       )}
-      <ItemList siteId={site.id} type="plugin" rows={rows} jobStates={itemJobStates(unfinished)} />
+      {!canManage && (
+        <p className="mb-4 rounded-lg border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+          Update WP Siteherd on this site to 0.7.0 or later to install, activate, deactivate and delete plugins from here.
+        </p>
+      )}
+      <ItemList siteId={site.id} type="plugin" rows={rows} jobStates={itemJobStates(unfinished)} canManage={canManage} />
     </>
   );
 }

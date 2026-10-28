@@ -7,13 +7,17 @@ import {
   ExternalLink,
   FilePen,
   MoreVertical,
+  Power,
+  PowerOff,
   RefreshCw,
   RotateCcw,
+  ShieldAlert,
+  Trash2,
   Undo2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { setUpdateExcluded } from "@/app/(app)/actions";
+import { pluginAction, setUpdateExcluded } from "@/app/(app)/actions";
 import { ItemIcon } from "@/components/item-icons";
 import { ToneBadge } from "@/components/report-badges";
 import { ItemJobBadge } from "@/components/update-status";
@@ -26,7 +30,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { itemKey, type ItemJobState, type UpdateItem } from "@/lib/update-types";
+import { itemKey, type ItemJobState, type PluginAction, type UpdateItem } from "@/lib/update-types";
+import type { Vuln } from "@/lib/vulnerabilities";
 import type { HistoryEntry } from "@/lib/updates";
 import { HistoryMenu, useRollback } from "./item-history";
 import { useStartUpdates } from "./use-start-updates";
@@ -48,6 +53,10 @@ export type ItemRow = {
   slug: string | null;
   history: HistoryEntry[];
   rollback: { version: string; source: "saved" | "wordpress.org" } | null;
+  /** Known vulnerabilities in the installed version, most severe first. */
+  vulns: Vuln[];
+  /** WP Siteherd itself: it can't be deactivated or deleted remotely. */
+  isSelf?: boolean;
 };
 
 const filters: { id: string; label: string; test: (r: ItemRow) => boolean; hideWhenEmpty?: boolean }[] = [
@@ -57,6 +66,7 @@ const filters: { id: string; label: string; test: (r: ItemRow) => boolean; hideW
   { id: "inactive", label: "Inactive", test: (r) => !r.active },
   { id: "excluded", label: "Excluded updates", test: (r) => r.excluded },
   { id: "edited", label: "Edited", test: (r) => r.edited !== null, hideWhenEmpty: true },
+  { id: "vulnerable", label: "Vulnerable", test: (r) => r.vulns.length > 0, hideWhenEmpty: true },
 ];
 
 /**
@@ -68,11 +78,14 @@ export function ItemList({
   type,
   rows,
   jobStates,
+  canManage = false,
 }: {
   siteId: string;
   type: ItemType;
   rows: ItemRow[];
   jobStates: Record<string, ItemJobState>;
+  /** Plugins only, when the site's plugin supports it (0.7.0+): activate, deactivate, delete. */
+  canManage?: boolean;
 }) {
   const router = useRouter();
   // Until a tab is picked, show "Update available" when there are updates, else All.
@@ -82,6 +95,8 @@ export function ItemList({
   const filter = picked ?? (hasUpdates ? "updates" : "all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [excluding, startExcluding] = useTransition();
+  const [managing, startManaging] = useTransition();
+  const [manageError, setManageError] = useState<string | null>(null);
   const keyOf = (r: ItemRow) => itemKey({ type, id: r.id });
   const edited = Object.fromEntries(rows.filter((r) => r.edited !== null).map((r) => [keyOf(r), r.edited!]));
   const updates = useStartUpdates(siteId, edited);
@@ -100,6 +115,29 @@ export function ItemList({
     const sent = updates.start(items, mode);
     setSelected((s) => new Set([...s].filter((k) => !sent.includes(k))));
   };
+  const manageable = (kind: PluginAction) => (r: ItemRow) =>
+    canManage &&
+    !stateOf(r) &&
+    (kind === "activate" ? !r.active : kind === "deactivate" ? r.active && !r.isSelf : !r.isSelf);
+  const manage = (kind: PluginAction, list: ItemRow[]) => {
+    const targets = list.filter(manageable(kind));
+    if (targets.length === 0) return;
+    if (kind === "delete") {
+      const names = targets.map((r) => r.name).join(", ");
+      const message =
+        targets.length === 1
+          ? `Delete ${names} from this site?\n\nIt is deactivated first, then WordPress deletes it and runs its uninstall routine, which may remove its settings and data. A copy of the plugin files is kept in wp-content/siteherd-backups for 30 days.`
+          : `Delete these ${targets.length} plugins from this site?\n\n${names}\n\nEach is deactivated first, then WordPress deletes it and runs its uninstall routine, which may remove its settings and data. Copies of the plugin files are kept in wp-content/siteherd-backups for 30 days.`;
+      if (!confirm(message)) return;
+    }
+    setManageError(null);
+    startManaging(async () => {
+      const result = await pluginAction(siteId, kind, targets.map((r) => ({ id: r.id, name: r.name })));
+      if (!result.ok) setManageError(result.error);
+      setSelected(new Set());
+      router.refresh();
+    });
+  };
   const setExcluded = (list: ItemRow[], excluded: boolean) =>
     startExcluding(async () => {
       for (const r of list) await setUpdateExcluded(siteId, { type, id: r.id }, excluded);
@@ -113,6 +151,12 @@ export function ItemList({
         <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           {updates.error}
+        </div>
+      )}
+      {manageError && (
+        <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+          {manageError}
         </div>
       )}
       {updates.info && (
@@ -183,6 +227,28 @@ export function ItemList({
               <Undo2 />
               Include updates
             </Button>
+            {canManage && (
+              <>
+                <Button variant="ghost" size="sm" disabled={managing || !chosen.some(manageable("activate"))} onClick={() => manage("activate", chosen)}>
+                  <Power />
+                  Activate
+                </Button>
+                <Button variant="ghost" size="sm" disabled={managing || !chosen.some(manageable("deactivate"))} onClick={() => manage("deactivate", chosen)}>
+                  <PowerOff />
+                  Deactivate
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-700 hover:text-red-800 dark:text-red-400"
+                  disabled={managing || !chosen.some(manageable("delete"))}
+                  onClick={() => manage("delete", chosen)}
+                >
+                  <Trash2 />
+                  Delete
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
@@ -208,6 +274,8 @@ export function ItemList({
                 }
                 onUpdate={canUpdate(r) ? () => updateRows([r], "one") : null}
                 onExclude={(excluded) => setExcluded([r], excluded)}
+                onManage={canManage ? (kind) => manage(kind, [r]) : null}
+                manageBusy={managing}
               />
             ))}
           </ul>
@@ -226,6 +294,8 @@ function Item({
   onSelect,
   onUpdate,
   onExclude,
+  onManage,
+  manageBusy,
 }: {
   siteId: string;
   type: ItemType;
@@ -236,6 +306,9 @@ function Item({
   /** Null when there's nothing to update or it's excluded/busy. */
   onUpdate: (() => void) | null;
   onExclude: (excluded: boolean) => void;
+  /** Activate / deactivate / delete, when the site supports it. */
+  onManage: ((kind: PluginAction) => void) | null;
+  manageBusy: boolean;
 }) {
   const back = useRollback({
     siteId,
@@ -249,6 +322,7 @@ function Item({
 
   const badges = (
     <>
+      {row.vulns.length > 0 && <VulnBadge vulns={row.vulns} />}
       {row.edited !== null && (
         <span title={`${row.edited} ${row.edited === 1 ? "file differs" : "files differ"} from wordpress.org. Updating overwrites the edits.`}>
           <ToneBadge t="warn">Edited</ToneBadge>
@@ -327,6 +401,29 @@ function Item({
               {row.excluded ? <Undo2 /> : <Ban />}
               {row.excluded ? "Include in updates" : "Exclude from updates"}
             </DropdownMenuItem>
+            {onManage && (
+              <>
+                <DropdownMenuSeparator />
+                {row.active ? (
+                  <DropdownMenuItem disabled={busy || manageBusy || row.isSelf} onClick={() => onManage("deactivate")}>
+                    <PowerOff />
+                    Deactivate
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem disabled={busy || manageBusy} onClick={() => onManage("activate")}>
+                    <Power />
+                    Activate
+                  </DropdownMenuItem>
+                )}
+                {!row.isSelf && (
+                  <DropdownMenuItem variant="destructive" disabled={busy || manageBusy} onClick={() => onManage("delete")}>
+                    <Trash2 />
+                    Delete…
+                  </DropdownMenuItem>
+                )}
+              </>
+            )}
+            {wporgUrl && <DropdownMenuSeparator />}
             {wporgUrl && (
               <DropdownMenuItem onClick={() => window.open(wporgUrl, "_blank", "noopener")}>
                 <ExternalLink />
@@ -358,5 +455,20 @@ function Version({ row }: { row: ItemRow }) {
       </span>
       {row.update && <span className="text-xs text-muted-foreground">{row.update} available</span>}
     </div>
+  );
+}
+
+/** Red badge with the worst rating; the tooltip lists each vulnerability and its fix. */
+function VulnBadge({ vulns }: { vulns: Vuln[] }) {
+  const worst = vulns[0];
+  const label = worst.rating ? `${worst.rating} risk` : "Vulnerable";
+  const lines = vulns.map((v) => `• ${v.title}${v.fixedIn ? ` (fixed in ${v.fixedIn})` : " (no fix yet)"}`);
+  return (
+    <span title={lines.join("\n")}>
+      <ToneBadge t="bad">
+        <ShieldAlert />
+        {vulns.length > 1 ? `${label} · ${vulns.length}` : label}
+      </ToneBadge>
+    </span>
   );
 }

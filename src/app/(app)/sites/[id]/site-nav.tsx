@@ -2,7 +2,6 @@
 
 import {
   Code2,
-  FileCheck2,
   HeartPulse,
   Languages,
   LayoutDashboard,
@@ -10,6 +9,7 @@ import {
   Plug,
   ScrollText,
   Settings,
+  ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -42,7 +42,7 @@ export function SiteNav({ siteId, counts }: { siteId: string; counts: SiteNavCou
       label: "Security",
       items: [
         { slug: "health", label: "Site Health", icon: HeartPulse, count: counts?.critical, alert: true },
-        { slug: "security", label: "Files & logins", icon: FileCheck2, count: counts?.files, alert: true },
+        { slug: "security", label: "Security", icon: ShieldCheck, count: counts?.files, alert: true },
       ],
     },
     { items: [{ slug: "settings", label: "Settings", icon: Settings }] },
