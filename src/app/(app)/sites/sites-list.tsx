@@ -1,6 +1,6 @@
 "use client";
 
-import { RefreshCw, Search, Tag, X } from "lucide-react";
+import { ExternalLink, RefreshCw, Search, Tag, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -338,7 +338,16 @@ function SiteItem({ site, labels, selected, onSelect }: { site: SiteListRow; lab
           {site.state !== "ok" && <StatusBadge state={site.state} />}
         </div>
         <div className="truncate text-xs text-muted-foreground">
-          {site.url}
+          <a
+            href={site.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex max-w-full items-center gap-1 align-bottom hover:text-foreground hover:underline"
+          >
+            <span className="truncate">{site.url}</span>
+            <ExternalLink className="size-3 shrink-0" aria-hidden />
+            <span className="sr-only">(opens in a new tab)</span>
+          </a>
           {site.lastReport && ` · ${site.lastReport}`}
         </div>
         <div className="mt-1">
