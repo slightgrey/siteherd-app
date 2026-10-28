@@ -27,7 +27,8 @@ const copy = {
   },
 };
 
-export function AuthForm({ mode }: { mode: "login" | "signup" }) {
+/** `signupOpen`: on the login page, whether to link to signup (false once the dashboard has its account). */
+export function AuthForm({ mode, signupOpen = true }: { mode: "login" | "signup"; signupOpen?: boolean }) {
   const [state, action, pending] = useActionState(mode === "login" ? login : signup, undefined);
   const text = copy[mode];
 
@@ -64,12 +65,14 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           <Button type="submit" disabled={pending}>
             {pending ? "Please wait…" : text.submit}
           </Button>
-          <p className="text-center text-sm text-muted-foreground">
-            {text.switchText}{" "}
-            <Link href={text.switchLink.href} className="text-foreground underline underline-offset-4">
-              {text.switchLink.label}
-            </Link>
-          </p>
+          {(mode === "signup" || signupOpen) && (
+            <p className="text-center text-sm text-muted-foreground">
+              {text.switchText}{" "}
+              <Link href={text.switchLink.href} className="text-foreground underline underline-offset-4">
+                {text.switchLink.label}
+              </Link>
+            </p>
+          )}
         </CardFooter>
       </form>
     </Card>

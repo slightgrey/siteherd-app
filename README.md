@@ -55,7 +55,7 @@ npm run db:migrate             # create the tables
 npm run dev                    # http://localhost:3000
 ```
 
-Sign up at `/signup`, add a site, and copy its **connection key** into the plugin's settings page (Settings → WP Siteherd) on that WordPress site.
+Sign up at `/signup` (read [Creating your account](#creating-your-account) before putting the dashboard online), add a site, and copy its **connection key** into the plugin's settings page (Settings → WP Siteherd) on that WordPress site.
 
 ### Environment variables
 
@@ -64,8 +64,26 @@ Sign up at `/signup`, add a site, and copy its **connection key** into the plugi
 | `DATABASE_URL` | Postgres connection string |
 | `APP_URL` | Public URL of the dashboard. It's built into every connection key, so the WordPress sites must be able to reach it. |
 | `AUTH_SECRET` | Session encryption key (`npx auth secret`) |
+| `SIGNUP_EMAILS` | Optional: comma-separated emails that may sign up. Unset: anyone can. |
+| `MAX_ACCOUNTS` | Optional: signup closes once this many accounts exist. Unset: no limit. |
 | `WORDFENCE_API_KEY` | Optional: turns on vulnerability detection. Get a free key at wordfence.com → Account → Integrations. |
 | `SITE_CA_FILE` | Optional, development only: an extra CA certificate for sites with self-signed HTTPS |
+
+### Creating your account
+
+Signup is **open to anyone** until you restrict it. That's fine on your own computer, but on a server reachable from the internet, set these **before** starting it, so nobody else can register first:
+
+```bash
+SIGNUP_EMAILS=you@example.com   # only this email can sign up (comma-separate several)
+MAX_ACCOUNTS=1                  # close signup once one account exists
+```
+
+Then open `/signup` and create your account with that email.
+
+- Any other email is refused with "Sign up is restricted on this dashboard."
+- Once `MAX_ACCOUNTS` is reached, the login page no longer shows "Sign up", and `/signup` says signup is closed.
+- Both checks run on the server when the account is created, so they can't be bypassed from the browser.
+- To add a teammate later, add their email to `SIGNUP_EMAILS`, raise `MAX_ACCOUNTS`, and restart the app.
 
 ### Scripts
 

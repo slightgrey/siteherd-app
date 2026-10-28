@@ -34,7 +34,7 @@ const nav: NavItem[] = [
       { href: "/updates/translations", label: "Translations" },
     ],
   },
-  { href: "/security", label: "Security", icon: ShieldCheck },
+  { href: "/security", label: "Security & Vulnerability", icon: ShieldCheck },
   { href: "/health", label: "Site Health", icon: HeartPulse },
   { href: "/labels", label: "Labels", icon: Tags },
 ];

@@ -9,12 +9,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { loadFleet } from "@/lib/fleet";
 import { integrityProblems } from "@/lib/report";
 
-export const metadata = { title: "Security · WP Siteherd" };
+export const metadata = { title: "Security & Vulnerability · WP Siteherd" };
 
 export default function SecurityPage() {
   return (
     <>
-      <PageHeader title="Security" description="Known vulnerabilities, file integrity and failed logins across all your sites." />
+      <PageHeader title="Security & Vulnerability" description="Known vulnerabilities, file integrity and failed logins across all your sites." />
       <Suspense fallback={<p className="mt-8 text-sm text-muted-foreground">Loading…</p>}>
         <SecurityOverview />
       </Suspense>
