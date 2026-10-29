@@ -57,7 +57,7 @@ async function LoginAttacks() {
   return (
     <div className="mt-6 grid gap-6">
       {newAdmins.length > 0 && (
-        <Card className="border-red-300 dark:border-red-500/40">
+        <Card className="border-bad/40">
           <CardHeader>
             <CardTitle>New administrators</CardTitle>
             <CardDescription>Accounts that became administrators since an earlier report. If you didn&apos;t add them, the site may be compromised.</CardDescription>

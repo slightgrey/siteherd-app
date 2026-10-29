@@ -6,6 +6,7 @@ import { siteState, timeAgo } from "@/components/site-status";
 import { db } from "@/db";
 import { sites } from "@/db/schema";
 import { AutoRefresh } from "@/components/auto-refresh";
+import { SiteIcon } from "@/components/item-icons";
 import { LabelPicker } from "@/components/label-picker";
 import { awaitingReport, isPending, loadJobs } from "@/lib/updates";
 import { loadLabels, loadSiteLabelIds } from "@/lib/labels";
@@ -19,7 +20,7 @@ import { WpAdminButton } from "./wp-admin-button";
 export default function SiteLayout({ children, params }: LayoutProps<"/sites/[id]">) {
   return (
     <>
-      <Link href="/sites" className="text-sm text-muted-foreground hover:underline">
+      <Link href="/sites" className="text-[13px] font-medium text-muted-foreground hover:text-foreground">
         ← All sites
       </Link>
       <Suspense fallback={<p className="mt-6 text-sm text-muted-foreground">Loading site…</p>}>
@@ -67,15 +68,19 @@ async function SiteShell({ params, children }: { params: Promise<{ id: string }>
   return (
     <>
       <AutoRefresh active={waitForReport} />
-      <header className="mt-3 flex flex-wrap items-center justify-between gap-3 border-b pb-4">
-        <div className="min-w-0">
+      <header className="mt-3 flex flex-wrap items-center justify-between gap-4 rounded-[14px] bg-card px-5 py-4 shadow-card ring-1 ring-border">
+        <div className="flex min-w-0 items-start gap-4">
+          <div className="mt-1 hidden sm:block">
+            <SiteIcon icon={report?.site_icon ?? null} url={site.url} />
+          </div>
+          <div className="min-w-0">
           <SiteSwitcher
             current={{ id: site.id, name: site.name }}
             state={state}
             sites={allSites.map((s) => ({ id: s.id, name: s.name, url: s.url, state: siteState(s.lastReportAt, now) }))}
           />
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            <a href={site.url} target="_blank" rel="noreferrer" className="hover:underline">
+          <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+            <a href={site.url} target="_blank" rel="noreferrer" className="hover:text-foreground hover:underline">
               {site.url}
             </a>
             {lastReport && ` · Last report ${timeAgo(lastReport.receivedAt, now)}`}
@@ -86,6 +91,7 @@ async function SiteShell({ params, children }: { params: Promise<{ id: string }>
               labels={labels.map(({ id, name, color }) => ({ id, name, color }))}
               assigned={siteLabelIds.get(site.id) ?? []}
             />
+          </div>
           </div>
         </div>
         <div className="flex items-center gap-2">

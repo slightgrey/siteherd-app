@@ -135,7 +135,7 @@ export function ProtectionCard({ siteId, report, protection }: { siteId: string;
           {report.schema >= 8 ? (
             <>
               {protection.jetpack && !protection.xmlrpcOff && (
-                <p className="text-sm text-amber-800 dark:text-amber-300">Jetpack is active and needs XML-RPC. Blocking it breaks Jetpack&apos;s connection.</p>
+                <p className="text-sm text-warn">Jetpack is active and needs XML-RPC. Blocking it breaks Jetpack&apos;s connection.</p>
               )}
               <p className="text-sm text-muted-foreground">
                 Blocking stops password guessing through xmlrpc.php. The WordPress mobile app and Jetpack need it.

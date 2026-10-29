@@ -206,7 +206,7 @@ export function SitesList({ rows, labels, initial }: { rows: SiteListRow[]; labe
         )}
       </div>
 
-      <div className="flex w-fit max-w-full flex-wrap gap-1 rounded-lg border p-1" role="tablist" aria-label="Filter sites by status">
+      <div className="flex w-fit max-w-full flex-wrap gap-1 rounded-[10px] bg-muted p-1 ring-1 ring-border" role="tablist" aria-label="Filter sites by status">
         {tabs.map((t) => {
           const n = matching.filter(t.test).length;
           const on = t.id === tab.id;
@@ -217,19 +217,19 @@ export function SitesList({ rows, labels, initial }: { rows: SiteListRow[]; labe
               aria-selected={on}
               onClick={() => set("status", t.id)}
               className={cn(
-                "flex items-center gap-2 rounded-md border px-3 py-1 text-sm transition-colors",
-                on ? "border-primary bg-primary/5 font-medium text-primary" : "border-transparent text-muted-foreground hover:text-foreground",
+                "flex items-center gap-2 rounded-lg px-3 py-1 text-sm transition-colors",
+                on ? "bg-card font-medium text-foreground shadow-card" : "text-muted-foreground hover:text-foreground",
               )}
             >
               {t.label}
-              <span className={cn("rounded px-1.5 text-xs tabular-nums", on ? "bg-primary/10" : "bg-muted")}>{n}</span>
+              <span className={cn("rounded-full px-1.5 text-xs font-semibold tabular-nums", on ? "bg-accent text-primary" : "bg-background")}>{n}</span>
             </button>
           );
         })}
       </div>
 
-      <div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border bg-muted/40 px-4 py-2.5">
+      <div className="overflow-hidden rounded-[14px] bg-card shadow-card ring-1 ring-border">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b bg-muted/60 px-4 py-2.5">
           <label className="flex items-center gap-3 text-sm font-medium">
             <input
               type="checkbox"
@@ -278,7 +278,7 @@ export function SitesList({ rows, labels, initial }: { rows: SiteListRow[]; labe
         </div>
 
         {/* Column names, aligned with the row cells below (wide screens only). */}
-        <div className="hidden items-center gap-3 border-b px-4 pt-4 pb-2.5 text-sm font-semibold text-foreground lg:flex">
+        <div className="hidden items-center gap-3 border-b px-4 pt-4 pb-2.5 text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase lg:flex">
           <span className="w-4 shrink-0" />
           <span className="w-9 shrink-0" />
           <span className="min-w-0 flex-1">Site</span>

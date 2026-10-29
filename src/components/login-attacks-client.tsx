@@ -111,7 +111,7 @@ export function XmlrpcButton({ siteId, off, size = "sm" }: { siteId: string; off
         {pending && <Loader2 className="animate-spin" />}
         {off ? "Allow XML-RPC again" : "Block XML-RPC logins"}
       </Button>
-      {error && <p className="max-w-64 text-xs text-red-700 dark:text-red-400">{error}</p>}
+      {error && <p className="max-w-64 text-xs text-bad">{error}</p>}
     </div>
   );
 }
@@ -136,7 +136,7 @@ export function BlockAllXmlrpcButton({ sites }: { sites: { id: string; name: str
         Block XML-RPC on {sites.length} {sites.length === 1 ? "site" : "sites"}
       </Button>
       {failures.map((f) => (
-        <p key={f} className="max-w-96 text-right text-xs text-red-700 dark:text-red-400">
+        <p key={f} className="max-w-96 text-right text-xs text-bad">
           {f}
         </p>
       ))}
@@ -237,7 +237,7 @@ export function LockoutControls({ siteId, lockout }: { siteId: string; lockout: 
           </Button>
         )}
       </div>
-      {message && <p className={cn("text-xs", message.ok ? "text-muted-foreground" : "text-red-700 dark:text-red-400")}>{message.text}</p>}
+      {message && <p className={cn("text-xs", message.ok ? "text-muted-foreground" : "text-bad")}>{message.text}</p>}
     </div>
   );
 }
@@ -262,7 +262,7 @@ export function LockoutAllButton({ sites }: { sites: { id: string; name: string 
         Turn on lockout on {sites.length} {sites.length === 1 ? "site" : "sites"}
       </Button>
       {failures.map((f) => (
-        <p key={f} className="max-w-96 text-right text-xs text-red-700 dark:text-red-400">
+        <p key={f} className="max-w-96 text-right text-xs text-bad">
           {f}
         </p>
       ))}

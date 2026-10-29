@@ -20,8 +20,8 @@ export function PageHeader({
 
 export function EmptyState({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
-    <div className="mt-6 rounded-lg border border-dashed p-10 text-center">
-      <p className="font-medium">{title}</p>
+    <div className="mt-6 rounded-[14px] border border-dashed border-input bg-card p-12 text-center">
+      <p className="font-display text-lg font-semibold tracking-tight">{title}</p>
       {children && <div className="mt-1 text-sm text-muted-foreground">{children}</div>}
     </div>
   );

@@ -58,7 +58,9 @@ export function SiteNav({ siteId, counts }: { siteId: string; counts: SiteNavCou
       {groups.map((group, i) => (
         <div key={i} className="flex gap-1 md:flex-col md:gap-0.5">
           {group.label && (
-            <div className="hidden px-2 pb-1 text-xs font-medium text-muted-foreground md:block">{group.label}</div>
+            <div className="hidden px-2.5 pb-1 text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase md:block">
+              {group.label}
+            </div>
           )}
           {group.items.map(({ slug, label, icon: Icon, count, alert }) => {
             const href = slug ? `${base}/${slug}` : base;
@@ -69,16 +71,16 @@ export function SiteNav({ siteId, counts }: { siteId: string; counts: SiteNavCou
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex shrink-0 items-center gap-2 rounded-md px-2 py-1.5 text-sm whitespace-nowrap transition-colors hover:bg-muted",
-                  active && "bg-muted font-medium",
+                  "group flex shrink-0 items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm whitespace-nowrap text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                  active && "bg-accent font-medium text-foreground hover:bg-accent",
                 )}
               >
-                <Icon className="size-4 text-muted-foreground" />
+                <Icon className={cn("size-4", active ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
                 <span className="flex-1">{label}</span>
                 {!!count && (
                   <span
                     className={cn(
-                      "rounded-full px-1.5 text-xs font-medium",
+                      "rounded-full px-1.5 text-xs font-semibold tabular-nums",
                       alert ? "bg-bad-soft text-bad" : "bg-warn-soft text-warn",
                     )}
                   >

@@ -150,8 +150,8 @@ export function BulkUpdateList({ type, items, active }: { type: UpdateType; item
         </div>
       ) : null}
 
-      <div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border bg-muted/40 px-4 py-2.5">
+      <div className="overflow-hidden rounded-[14px] bg-card shadow-card ring-1 ring-border">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b bg-muted/60 px-4 py-2.5">
           <label className="flex items-center gap-3 text-sm font-medium">
             <TriCheckbox
               checked={allChosen}

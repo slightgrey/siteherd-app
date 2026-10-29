@@ -160,13 +160,13 @@ export function ItemList({
         </div>
       )}
       {updates.info && (
-        <div className="flex items-start gap-2 rounded-lg border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+        <div className="flex items-start gap-2 rounded-[10px] bg-accent/60 px-4 py-3 text-sm text-accent-foreground">
           <FilePen className="mt-0.5 size-4 shrink-0" />
           {updates.info}
         </div>
       )}
 
-      <div className="flex w-fit max-w-full flex-wrap gap-1 rounded-lg border p-1" role="tablist" aria-label={`Filter ${type}s`}>
+      <div className="flex w-fit max-w-full flex-wrap gap-1 rounded-[10px] bg-muted p-1 ring-1 ring-border" role="tablist" aria-label={`Filter ${type}s`}>
         {filters.map((f) => {
           const n = rows.filter(f.test).length;
           if (f.hideWhenEmpty && n === 0) return null;
@@ -181,19 +181,19 @@ export function ItemList({
                 setSelected(new Set());
               }}
               className={cn(
-                "flex items-center gap-2 rounded-md border px-3 py-1 text-sm transition-colors",
-                on ? "border-primary bg-primary/5 font-medium text-primary" : "border-transparent text-muted-foreground hover:text-foreground",
+                "flex items-center gap-2 rounded-lg px-3 py-1 text-sm transition-colors",
+                on ? "bg-card font-medium text-foreground shadow-card" : "text-muted-foreground hover:text-foreground",
               )}
             >
               {f.label}
-              <span className={cn("rounded px-1.5 text-xs tabular-nums", on ? "bg-primary/10" : "bg-muted")}>{n}</span>
+              <span className={cn("rounded-full px-1.5 text-xs font-semibold tabular-nums", on ? "bg-accent text-primary" : "bg-background")}>{n}</span>
             </button>
           );
         })}
       </div>
 
-      <div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border bg-muted/40 px-4 py-2.5">
+      <div className="overflow-hidden rounded-[14px] bg-card shadow-card ring-1 ring-border">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b bg-muted/60 px-4 py-2.5">
           <label className="flex items-center gap-3 text-sm font-medium">
             <input
               type="checkbox"

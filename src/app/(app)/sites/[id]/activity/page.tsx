@@ -97,9 +97,9 @@ function EntryIcon({ entry }: { entry: ActivityEntry }) {
       : entry.kind === "checks"
         ? (entry.health?.critical ?? 0) > 0 || (entry.files?.problems ?? 0) > 0
           ? "bg-bad-soft text-bad"
-          : "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300"
+          : "bg-accent text-primary"
         : entry.kind === "admin" && entry.added
-          ? "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300"
+          ? "bg-bad-soft text-bad"
           : "bg-muted text-muted-foreground";
   const Icon =
     entry.kind === "update"
@@ -134,7 +134,7 @@ function EntryBody({ entry, now }: { entry: ActivityEntry; now: number }) {
         {job.note && <p className="text-xs text-muted-foreground">{job.note}</p>}
         {n > 3 ? (
           // Big runs start collapsed so the timeline stays scannable.
-          <details className="group rounded-md border">
+          <details className="group rounded-[10px] bg-card ring-1 ring-border">
             <summary className="flex cursor-pointer list-none items-center gap-1 px-3 py-2 text-sm text-muted-foreground">
               <ChevronRight className="size-4 transition-transform group-open:rotate-90" />
               Show {n} items
@@ -144,7 +144,7 @@ function EntryBody({ entry, now }: { entry: ActivityEntry; now: number }) {
             </div>
           </details>
         ) : (
-          <div className="rounded-md border px-3 py-2">
+          <div className="rounded-[10px] bg-card px-3 py-2 ring-1 ring-border">
             <JobItems job={job} />
           </div>
         )}

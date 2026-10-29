@@ -28,7 +28,7 @@ function FallbackImage({ sources, className, fallback }: { sources: string[]; cl
 
 function IconBox({ icon: Icon }: { icon: React.ComponentType<{ className?: string }> }) {
   return (
-    <div className="flex size-9 shrink-0 items-center justify-center rounded-md border bg-muted text-muted-foreground">
+    <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-muted text-muted-foreground ring-1 ring-border">
       <Icon className="size-4" />
     </div>
   );
@@ -71,7 +71,7 @@ export function SiteIcon({ icon, url, small = false }: { icon: string | null; ur
   const sources = [icon, `${url.replace(/\/+$/, "")}/favicon.ico`].filter((s): s is string => !!s);
   const box = small ? "size-7" : "size-9";
   return (
-    <div className={cn("flex shrink-0 items-center justify-center rounded-md border bg-background", box)}>
+    <div className={cn("flex shrink-0 items-center justify-center rounded-[10px] bg-muted ring-1 ring-border", box)}>
       <FallbackImage
         key={url}
         sources={sources}

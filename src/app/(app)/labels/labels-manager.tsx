@@ -56,7 +56,7 @@ export function LabelsManager({ labels }: { labels: Label[] }) {
 
   return (
     <div className="mt-6 grid max-w-3xl gap-6">
-      <form onSubmit={create} className="grid gap-3 rounded-lg border p-4">
+      <form onSubmit={create} className="grid gap-3 rounded-[14px] bg-card p-5 shadow-card ring-1 ring-border">
         <div className="text-sm font-medium">New label</div>
         <div className="flex flex-wrap items-center gap-3">
           <Input
@@ -84,7 +84,7 @@ export function LabelsManager({ labels }: { labels: Label[] }) {
       {labels.length === 0 ? (
         <p className="text-sm text-muted-foreground">No labels yet.</p>
       ) : (
-        <ul className="divide-y rounded-lg border">
+        <ul className="divide-y overflow-hidden rounded-[14px] bg-card shadow-card ring-1 ring-border">
           {labels.map((l) => (
             <LabelRow key={l.id} label={l} />
           ))}

@@ -271,7 +271,7 @@ export function EnvironmentTable({ report }: { report: Report }) {
     ["WP Siteherd plugin", report.plugin_version || "—"],
   ];
   return (
-    <div className="overflow-x-auto rounded-lg border">
+    <div className="overflow-x-auto rounded-[14px] bg-card shadow-card ring-1 ring-border">
       <Table>
         <TableBody>
           {rows.map(([label, value]) => (

@@ -66,7 +66,7 @@ async function Plugins({ data }: { data: SiteData & { report: Report } }) {
         </div>
       )}
       {!canManage && (
-        <p className="mb-4 rounded-lg border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+        <p className="mb-4 rounded-[10px] bg-accent/60 px-4 py-3 text-sm text-accent-foreground">
           Update WP Siteherd on this site to 0.7.0 or later to install, activate, deactivate and delete plugins from here.
         </p>
       )}

@@ -33,9 +33,9 @@ export function AuthForm({ mode, signupOpen = true }: { mode: "login" | "signup"
   const text = copy[mode];
 
   return (
-    <Card className="w-full max-w-sm">
+    <Card className="w-full max-w-sm py-6 [--card-spacing:--spacing(6)]">
       <CardHeader>
-        <CardTitle>{text.title}</CardTitle>
+        <CardTitle className="text-2xl">{text.title}</CardTitle>
         <CardDescription>{text.description}</CardDescription>
       </CardHeader>
       <form action={action}>
@@ -62,7 +62,7 @@ export function AuthForm({ mode, signupOpen = true }: { mode: "login" | "signup"
           </div>
         </CardContent>
         <CardFooter className="mt-6 flex-col items-stretch gap-3">
-          <Button type="submit" disabled={pending}>
+          <Button type="submit" size="lg" disabled={pending}>
             {pending ? "Please wait…" : text.submit}
           </Button>
           {(mode === "signup" || signupOpen) && (

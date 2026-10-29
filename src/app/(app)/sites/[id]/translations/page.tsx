@@ -75,7 +75,7 @@ async function Translations({ data }: { data: SiteData & { report: Report } }) {
             )}
           </div>
           {packs.length > 0 && (
-            <div className="overflow-x-auto rounded-lg border">
+            <div className="overflow-x-auto rounded-[14px] bg-card shadow-card ring-1 ring-border">
               <Table>
                 <TableHeader>
                   <TableRow>

@@ -57,7 +57,7 @@ export function SiteSwitcher({ current, state, sites }: { current: { id: string;
   return (
     <Popover.Root open={open} onOpenChange={onOpenChange}>
       {/* The button goes inside the heading (a heading isn't allowed inside a button). */}
-      <h1 className="min-w-0 text-2xl font-semibold">
+      <h1 className="min-w-0 font-display text-2xl font-semibold tracking-tight">
         <Popover.Trigger className="group flex max-w-full items-center gap-3 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
           <span className="truncate">{current.name}</span>
           <StatusBadge state={state} />
