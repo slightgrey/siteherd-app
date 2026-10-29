@@ -1,6 +1,6 @@
 "use client";
 
-import { Globe, HeartPulse, KeyRound, LayoutDashboard, RefreshCw, ShieldCheck, Tags } from "lucide-react";
+import { Globe, HeartPulse, LayoutDashboard, RefreshCw, ShieldCheck, Tags } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -25,13 +25,13 @@ type NavItem = {
   children?: { href: string; label: string }[];
 };
 
+// Same items and order as before the redesign; the group labels only add headings.
 const groups: { label: string; items: NavItem[] }[] = [
   {
     label: "Overview",
     items: [
       { href: "/", label: "Dashboard", icon: LayoutDashboard },
       { href: "/sites", label: "Sites", icon: Globe },
-      { href: "/labels", label: "Labels", icon: Tags },
     ],
   },
   {
@@ -53,10 +53,21 @@ const groups: { label: string; items: NavItem[] }[] = [
   {
     label: "Security",
     items: [
-      { href: "/security", label: "Vulnerabilities & files", icon: ShieldCheck, exact: true },
-      { href: "/security/logins", label: "Login attacks", icon: KeyRound },
+      {
+        href: "/security",
+        label: "Security & Vulnerability",
+        icon: ShieldCheck,
+        children: [
+          { href: "/security", label: "Vulnerabilities & files" },
+          { href: "/security/logins", label: "Login attacks" },
+        ],
+      },
       { href: "/health", label: "Site Health", icon: HeartPulse },
     ],
+  },
+  {
+    label: "Organize",
+    items: [{ href: "/labels", label: "Labels", icon: Tags }],
   },
 ];
 
