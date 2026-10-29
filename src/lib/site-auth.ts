@@ -24,7 +24,7 @@ function unauthorized(label: string, siteId: string | null, reason: string) {
 export async function authenticateSiteRequest(
   request: Request,
   label: string,
-): Promise<{ site: { id: string }; rawBody: string; signature: string } | Response> {
+): Promise<{ site: { id: string; secret: string }; rawBody: string; signature: string } | Response> {
   const siteId = request.headers.get(HEADER_SITE);
   const timestamp = request.headers.get(HEADER_TIMESTAMP);
   const signature = request.headers.get(HEADER_SIGNATURE);
@@ -47,7 +47,7 @@ export async function authenticateSiteRequest(
   const result = verify(site.secret, timestamp, rawBody, signature);
   if (!result.ok) return unauthorized(label, siteId, result.reason);
 
-  return { site: { id: site.id }, rawBody, signature };
+  return { site, rawBody, signature };
 }
 
 /** Parse a JSON object body, or a 400 Response. */

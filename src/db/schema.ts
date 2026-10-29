@@ -206,6 +206,18 @@ export const feedState = pgTable("feed_state", {
   attemptedAt: timestamp("attempted_at", { withTimezone: true }),
 });
 
+// Account settings (/settings). One row per user, created on first save; later
+// sections (notifications, alerts) add columns here.
+export const userSettings = pgTable("user_settings", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  // White label: shown under the logo, in the dashboard greeting and, on
+  // connected sites, as "{agencyName} WordPress Manager" in the plugin.
+  agencyName: text("agency_name"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const sitesRelations = relations(sites, ({ one, many }) => ({
   user: one(users, { fields: [sites.userId], references: [users.id] }),
   reports: many(reports),

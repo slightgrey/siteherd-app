@@ -16,6 +16,7 @@ import { callSite } from "@/lib/site-client";
 import { setExclusion } from "@/lib/exclusions";
 import { PLUGIN_ACTIONS } from "@/lib/update-types";
 import { cancelWaitingJob, startPluginAction, startRollback, startUpdate, type StartResult } from "@/lib/updates";
+import { saveAgencyName } from "@/lib/user-settings";
 import { searchPlugins, type WporgPlugin } from "@/lib/wporg";
 import { z } from "zod";
 
@@ -256,6 +257,13 @@ export async function setSiteLabelAction(siteId: string, labelId: string, on: bo
   const user = await requireUser();
   if (!isUuid(siteId) || !isUuid(labelId)) return { ok: false };
   return { ok: await setSiteLabel(user.id, siteId, labelId, on === true) };
+}
+
+/** Settings → White label. An empty name restores the defaults. */
+export async function saveWhiteLabel(agencyName: unknown): Promise<{ ok: boolean }> {
+  const user = await requireUser();
+  await saveAgencyName(user.id, agencyName);
+  return { ok: true };
 }
 
 export async function logout() {

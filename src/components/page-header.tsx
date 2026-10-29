@@ -3,7 +3,7 @@ export function PageHeader({
   description,
   action,
 }: {
-  title: string;
+  title: React.ReactNode;
   description?: React.ReactNode;
   action?: React.ReactNode;
 }) {

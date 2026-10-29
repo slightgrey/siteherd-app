@@ -12,7 +12,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 
-export function AppSidebar({ footer }: { footer: React.ReactNode }) {
+export function AppSidebar({ subtitle, footer }: { subtitle: React.ReactNode; footer: React.ReactNode }) {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
@@ -24,7 +24,7 @@ export function AppSidebar({ footer }: { footer: React.ReactNode }) {
               </span>
               <span className="grid leading-tight">
                 <span className="font-display text-base font-semibold tracking-tight">SiteHerd</span>
-                <span className="text-xs text-sidebar-muted">WordPress fleet</span>
+                <span className="truncate text-xs text-sidebar-muted">{subtitle}</span>
               </span>
             </SidebarMenuButton>
           </SidebarMenuItem>

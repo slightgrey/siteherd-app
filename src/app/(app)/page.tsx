@@ -1,6 +1,7 @@
 import { ArrowRight, CircleCheck, FileWarning, Globe, HeartPulse, KeyRound, Plus, RefreshCw, ShieldAlert } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { SiteIcon } from "@/components/item-icons";
 import { EmptyState, PageHeader } from "@/components/page-header";
@@ -10,6 +11,9 @@ import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { attentionReasons, loadFleet, siteLoginAttention, type AttentionReason, type FleetSite } from "@/lib/fleet";
 import { integrityProblems, pendingUpdates } from "@/lib/report";
+import { requireUser } from "@/lib/session";
+import { loadUserSettings } from "@/lib/user-settings";
+import { fleetTitle } from "@/lib/white-label";
 import { cn } from "@/lib/utils";
 import { worstRating } from "@/lib/vulnerabilities";
 
@@ -22,7 +26,11 @@ export default function DashboardPage() {
   return (
     <>
       <PageHeader
-        title="Fleet overview"
+        title={
+          <Suspense fallback="Fleet overview">
+            <FleetTitle />
+          </Suspense>
+        }
         description="Everything across your WordPress sites at a glance."
         action={
           <div className="flex flex-wrap gap-2">
@@ -42,6 +50,13 @@ export default function DashboardPage() {
       </Suspense>
     </>
   );
+}
+
+// "Howdy, {agency}!" once an agency name is set in Settings → White label.
+async function FleetTitle() {
+  const user = await requireUser();
+  await connection();
+  return fleetTitle((await loadUserSettings(user.id)).agencyName);
 }
 
 type Tone = "good" | "warn" | "bad" | "neutral";

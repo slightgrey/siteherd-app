@@ -1,15 +1,24 @@
-import { LogOut } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
+import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { requireUser } from "@/lib/session";
+import { loadUserSettings } from "@/lib/user-settings";
+import { brandSubtitle } from "@/lib/white-label";
 import { logout } from "./actions";
 
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <SidebarProvider>
       <AppSidebar
+        subtitle={
+          <Suspense fallback={brandSubtitle(null)}>
+            <BrandSubtitle />
+          </Suspense>
+        }
         footer={
           <Suspense>
             <UserMenu />
@@ -30,12 +39,38 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
   );
 }
 
+// The agency name from Settings → White label, else "WordPress fleet".
+async function BrandSubtitle() {
+  const user = await requireUser();
+  await connection();
+  return brandSubtitle((await loadUserSettings(user.id)).agencyName);
+}
+
 async function UserMenu() {
   const user = await requireUser();
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <div className="truncate px-2 pb-1 text-xs text-sidebar-muted group-data-[collapsible=icon]:hidden">{user.email}</div>
+        <div className="flex items-center gap-1 pb-1 pl-2 group-data-[collapsible=icon]:hidden">
+          <span className="min-w-0 flex-1 truncate text-xs text-sidebar-muted">{user.email}</span>
+          <Link
+            href="/settings"
+            title="Settings"
+            aria-label="Settings"
+            className="flex size-7 shrink-0 items-center justify-center rounded-md text-sidebar-muted transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground [&_svg]:size-4"
+          >
+            <Settings />
+          </Link>
+        </div>
+        {/* With the sidebar collapsed to icons, the email row is hidden; Settings gets its own icon button. */}
+        <SidebarMenuButton
+          tooltip="Settings"
+          render={<Link href="/settings" />}
+          className="hidden text-sidebar-muted group-data-[collapsible=icon]:flex"
+        >
+          <Settings />
+          <span>Settings</span>
+        </SidebarMenuButton>
         <form action={logout}>
           <SidebarMenuButton type="submit" tooltip="Log out" className="text-sidebar-muted">
             <LogOut />

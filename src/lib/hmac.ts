@@ -18,6 +18,29 @@ export function sign(secret: string, timestamp: string, rawBody: string): string
   return createHmac("sha256", secret).update(`${timestamp}.${rawBody}`).digest("hex");
 }
 
+/**
+ * A JSON response signed like a request (same headers and contract), so the
+ * plugin can trust what the dashboard answers, e.g. the branding after a report.
+ */
+export function signedJson(
+  site: { id: string; secret: string },
+  data: unknown,
+  init: { status?: number } = {},
+  nowSeconds: number = Math.floor(Date.now() / 1000),
+): Response {
+  const body = JSON.stringify(data);
+  const timestamp = String(nowSeconds);
+  return new Response(body, {
+    status: init.status ?? 200,
+    headers: {
+      "content-type": "application/json",
+      [HEADER_SITE]: site.id,
+      [HEADER_TIMESTAMP]: timestamp,
+      [HEADER_SIGNATURE]: sign(site.secret, timestamp, body),
+    },
+  });
+}
+
 export type VerifyResult =
   | { ok: true }
   | { ok: false; reason: "bad_timestamp" | "stale_timestamp" | "bad_signature" };

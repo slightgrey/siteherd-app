@@ -1,9 +1,11 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { reports, sites } from "@/db/schema";
+import { reports, sites, userSettings } from "@/db/schema";
+import { signedJson } from "@/lib/hmac";
 import { previousReport, recordLoginData } from "@/lib/login-data";
 import { parseReport } from "@/lib/report";
 import { authenticateSiteRequest, parseJsonObject } from "@/lib/site-auth";
+import { normalizeAgencyName } from "@/lib/white-label";
 
 export async function POST(request: Request) {
   const auth = await authenticateSiteRequest(request, "report");
@@ -32,5 +34,12 @@ export async function POST(request: Request) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  return Response.json({ ok: true, reportId: inserted.id }, { status: 201 });
+  // Signed, so the plugin (0.11.0+) can trust the branding and show the agency name.
+  const owner = await db
+    .select({ agencyName: userSettings.agencyName })
+    .from(sites)
+    .leftJoin(userSettings, eq(userSettings.userId, sites.userId))
+    .where(eq(sites.id, site.id));
+  const branding = { agency_name: normalizeAgencyName(owner[0]?.agencyName) };
+  return signedJson(site, { ok: true, reportId: inserted.id, branding }, { status: 201 });
 }

@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { MAX_CLOCK_SKEW_SECONDS, sign, verify } from "./hmac";
+import { MAX_CLOCK_SKEW_SECONDS, sign, signedJson, verify } from "./hmac";
 
 const secret = "a".repeat(64);
 const now = 1_760_000_000;
@@ -51,5 +51,17 @@ describe("verify", () => {
   it("rejects non-numeric timestamps", () => {
     expect(verify(secret, "12.5", body, good, now)).toEqual({ ok: false, reason: "bad_timestamp" });
     expect(verify(secret, "", body, good, now)).toEqual({ ok: false, reason: "bad_timestamp" });
+  });
+});
+
+describe("signedJson", () => {
+  it("signs the exact response body with the site secret", async () => {
+    const res = signedJson({ id: "site-1", secret }, { ok: true, branding: { agency_name: "My Agency" } }, { status: 201 }, now);
+    const raw = await res.text();
+    expect(res.status).toBe(201);
+    expect(res.headers.get("x-siteherd-site")).toBe("site-1");
+    expect(res.headers.get("x-siteherd-timestamp")).toBe(ts);
+    expect(verify(secret, ts, raw, res.headers.get("x-siteherd-signature")!, now)).toEqual({ ok: true });
+    expect(JSON.parse(raw).branding.agency_name).toBe("My Agency");
   });
 });
