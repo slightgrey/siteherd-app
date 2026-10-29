@@ -204,7 +204,12 @@ export function ItemList({
             />
             {chosen.length > 0 ? `${chosen.length} selected` : "Select all"}
           </label>
-          <div className="ml-auto flex flex-wrap items-center gap-1">
+          {chosen.length === 0 && (
+            <span className="ml-auto text-[13px] text-muted-foreground">
+              Select {type}s to update, exclude{canManage ? ", activate or delete" : ""} them together.
+            </span>
+          )}
+          <div className={cn("ml-auto flex-wrap items-center gap-1", chosen.length === 0 ? "hidden" : "flex")}>
             <Button variant="ghost" size="sm" disabled={!chosen.some(canUpdate)} onClick={() => updateRows(chosen, "selected")}>
               <RefreshCw />
               Update{chosen.some(canUpdate) && ` (${chosen.filter(canUpdate).length})`}
@@ -255,6 +260,15 @@ export function ItemList({
         {visible.length === 0 ? (
           <p className="px-4 py-10 text-center text-sm text-muted-foreground">No {type}s match this filter.</p>
         ) : (
+          <>
+          <div className="hidden items-center gap-3 border-b px-4 py-2 text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase md:flex">
+            <span className="w-4 shrink-0" />
+            <span className="w-9 shrink-0" />
+            <span className="min-w-0 flex-1">{type === "theme" ? "Theme" : "Plugin"}</span>
+            <span className="w-40 shrink-0">Version</span>
+            <span className="w-52 shrink-0 text-right">Status</span>
+            <span className="w-32 shrink-0" />
+          </div>
           <ul className="divide-y">
             {visible.map((r) => (
               <Item
@@ -279,6 +293,7 @@ export function ItemList({
               />
             ))}
           </ul>
+          </>
         )}
       </div>
     </div>
@@ -339,7 +354,14 @@ function Item({
   );
 
   return (
-    <li className={cn("flex items-center gap-3 px-4 py-3", selected && "bg-muted/40")}>
+    <li
+      className={cn(
+        "relative flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/60",
+        "before:absolute before:inset-y-2.5 before:left-0 before:w-[3px] before:rounded-r-full",
+        row.vulns.length > 0 ? "before:bg-bad" : row.update && !row.excluded ? "before:bg-warn" : "before:bg-transparent",
+        selected && "bg-accent/50 hover:bg-accent/60",
+      )}
+    >
       <input
         type="checkbox"
         aria-label={`Select ${row.name}`}
@@ -347,19 +369,21 @@ function Item({
         checked={selected}
         onChange={(e) => onSelect(e.target.checked)}
       />
-      <ItemIcon type={type} id={row.id} slug={row.slug} />
+      <div className={cn("shrink-0", !row.active && type === "plugin" && "opacity-55 grayscale")}>
+        <ItemIcon type={type} id={row.id} slug={row.slug} />
+      </div>
 
       <div className="min-w-0 flex-1">
-        <div className="truncate font-medium" title={row.id}>
+        <div className={cn("truncate font-medium", !row.active && type === "plugin" && "text-muted-foreground")} title={row.id}>
           {row.name}
         </div>
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-2 text-xs [&_a]:text-muted-foreground [&_a:hover]:text-primary [&_button]:text-xs [&_button:not(:disabled)]:text-muted-foreground [&_button:not(:disabled):hover]:text-primary">
           {wporgUrl && (
             <>
               <a href={`${wporgUrl}#developers`} target="_blank" rel="noreferrer" className="text-primary underline-offset-4 hover:underline">
                 Changelog
               </a>
-              <span className="text-muted-foreground/50">|</span>
+              <span className="text-muted-foreground/40">·</span>
             </>
           )}
           <HistoryMenu siteId={siteId} entries={row.history} trigger="link" />
@@ -368,14 +392,15 @@ function Item({
         {back.error && <p className="mt-1 text-xs text-bad">{back.error}</p>}
       </div>
 
-      <div className="w-36 shrink-0 text-sm">
+      <div className="w-40 shrink-0 text-sm">
         <Version row={row} />
       </div>
       <div className="hidden w-52 shrink-0 flex-wrap justify-end gap-1.5 md:flex">{badges}</div>
       <div className="flex w-32 shrink-0 items-center justify-end gap-1">
         {busy && <ItemJobBadge state={state === "adding" ? null : state} />}
         {!busy && onUpdate && (
-          <Button variant="outline" size="xs" onClick={onUpdate}>
+          <Button size="xs" onClick={onUpdate}>
+            <RefreshCw />
             Update
           </Button>
         )}
@@ -440,18 +465,18 @@ function Item({
 function Version({ row }: { row: ItemRow }) {
   if (row.update && !row.excluded) {
     return (
-      <div className="flex flex-wrap items-center gap-1.5">
-        <span className="font-mono text-xs text-muted-foreground">{row.version}</span>
-        <span className="text-muted-foreground">→</span>
-        <ToneBadge t="warn">{row.update}</ToneBadge>
+      <div className="flex flex-wrap items-center gap-1.5 font-mono text-xs">
+        <span className="text-muted-foreground">{row.version}</span>
+        <span className="text-muted-foreground" aria-label="updates to">→</span>
+        <span className="rounded-md bg-warn-soft px-1.5 py-0.5 font-medium text-warn">{row.update}</span>
       </div>
     );
   }
   return (
     <div>
-      <span className="flex items-center gap-1 font-mono text-xs text-good">
+      <span className="flex items-center gap-1.5 font-mono text-xs text-foreground">
         {row.version}
-        {!row.update && <CheckCircle2 className="size-3.5" />}
+        {!row.update && <CheckCircle2 className="size-3.5 text-good" aria-label="Up to date" />}
       </span>
       {row.update && <span className="text-xs text-muted-foreground">{row.update} available</span>}
     </div>
