@@ -122,7 +122,7 @@ export function OverviewStats({ data }: { data: WithReport }) {
           {report.health && checkedAgo(report.health.checked_at, now)}
         </div>
       </Stat>
-      <Stat label="Failed logins (24 h)" value={report.failed_logins_24h} href={`${base}/security`}>
+      <Stat label="Failed logins (24 h)" value={report.failed_logins_24h} href={`${base}/logins`}>
         {report.failed_logins_24h === 0 ? "None" : <FailedLoginsBadge count={report.failed_logins_24h} />}
       </Stat>
       <Stat label="File integrity" value={problems ? (problems.total === 0 ? "OK" : problems.total) : "—"} href={`${base}/security`}>
@@ -283,24 +283,6 @@ export function EnvironmentTable({ report }: { report: Report }) {
         </TableBody>
       </Table>
     </div>
-  );
-}
-
-export function FailedLoginsCard({ report }: { report: Report }) {
-  const n = report.failed_logins_24h;
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Failed logins (last 24 hours)</CardTitle>
-        <CardDescription>Counts only, no usernames or IP addresses. A high number usually means someone is guessing passwords.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center gap-3">
-          <span className="text-3xl font-semibold">{n}</span>
-          {n > 0 && <FailedLoginsBadge count={n} />}
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 

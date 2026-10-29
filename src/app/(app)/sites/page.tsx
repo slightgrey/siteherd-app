@@ -110,7 +110,7 @@ async function SitesTable({ searchParams }: { searchParams: PageProps<"/sites">[
                   <IntegrityBadge integrity={report.integrity} />
                 </Link>
                 {report.failed_logins_24h > 0 && (
-                  <Link href={`/sites/${site.id}/security#logins`} className={badgeLink} title="Open failed logins">
+                  <Link href={`/sites/${site.id}/logins`} className={badgeLink} title="Open failed logins">
                     <FailedLoginsBadge count={report.failed_logins_24h} />
                   </Link>
                 )}

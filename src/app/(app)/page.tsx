@@ -9,14 +9,11 @@ import { StatusBadge } from "@/components/site-status";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { attentionReasons, loadFleet } from "@/lib/fleet";
+import { attentionReasons, loadFleet, siteLoginAttention } from "@/lib/fleet";
 import { integrityProblems, pendingUpdates } from "@/lib/report";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Dashboard · WP Siteherd" };
-
-// Same threshold as attentionReasons() uses to flag a single site.
-const MANY_FAILED_LOGINS = 20;
 
 // Placeholder cards while the data loads (two rows of three on wide screens).
 const SKELETON_CARDS = [0, 1, 2, 3, 4, 5];
@@ -132,7 +129,7 @@ function OverviewSkeleton() {
 }
 
 async function Overview() {
-  const { sites } = await loadFleet();
+  const { sites, now } = await loadFleet();
 
   if (sites.length === 0) {
     return (
@@ -153,6 +150,7 @@ async function Overview() {
   const critical = reports.reduce((n, r) => n + (r.health?.counts.critical ?? 0), 0);
   const changedFiles = reports.filter((r) => (integrityProblems(r.integrity)?.total ?? 0) > 0).length;
   const failedLogins = reports.reduce((n, r) => n + r.failed_logins_24h, 0);
+  const sitesUnderAttack = sites.filter((s) => siteLoginAttention({ ...s, now })).length;
   const vulnerable = sites.reduce((n, s) => n + s.vulns.length, 0);
   const sitesWithVulns = sites.filter((s) => s.vulns.length > 0).length;
 
@@ -210,10 +208,10 @@ async function Overview() {
         <Stat
           label="Failed logins (24 h)"
           value={failedLogins}
-          href="/security"
+          href="/security/logins"
           icon={KeyRound}
-          tone={failedLogins >= MANY_FAILED_LOGINS ? "warn" : "neutral"}
-          hint="Across all sites"
+          tone={sitesUnderAttack > 0 ? "warn" : "neutral"}
+          hint={sitesUnderAttack ? `${sitesUnderAttack} ${sitesUnderAttack === 1 ? "site needs" : "sites need"} attention` : "Across all sites"}
         />
       </StatGrid>
 

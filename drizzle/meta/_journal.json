@@ -43,6 +43,13 @@
       "when": 1793147541993,
       "tag": "0005_vulnerabilities",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793266776960,
+      "tag": "0006_login_attacks",
+      "breakpoints": true
     }
   ]
 }

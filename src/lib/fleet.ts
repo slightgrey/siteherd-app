@@ -4,6 +4,9 @@ import { siteState } from "@/components/site-status";
 import { db } from "@/db";
 import { reports, sites } from "@/db/schema";
 import { loadExclusions } from "@/lib/exclusions";
+import { loginAttention, type DayCounts } from "@/lib/login-attacks";
+import { loadLoginDays, loadNewAdmins } from "@/lib/login-data";
+import { loginProtection } from "@/lib/login-protection";
 import { integrityProblems, parseReport, pendingUpdates } from "@/lib/report";
 import { requireUser } from "@/lib/session";
 import { ensureReportsPruned } from "@/lib/retention";
@@ -33,8 +36,17 @@ export async function loadFleet() {
     excluded: exclusions.get(site.id)!,
   }));
   await Promise.all([ensureFreshFeed(), ensureReportsPruned()]);
-  const vulns = await loadVulns(parsed);
-  return { now, sites: parsed.map((site) => ({ ...site, vulns: vulns.get(site.id)! })) };
+  const ids = parsed.map((s) => s.id);
+  const [vulns, loginDays, newAdmins] = await Promise.all([loadVulns(parsed), loadLoginDays(ids, 8), loadNewAdmins(ids)]);
+  return {
+    now,
+    sites: parsed.map((site) => ({
+      ...site,
+      vulns: vulns.get(site.id)!,
+      loginDays: loginDays.get(site.id)!,
+      newAdmins: newAdmins.get(site.id)!,
+    })),
+  };
 }
 
 export type FleetSite = Awaited<ReturnType<typeof loadFleet>>["sites"][number];
@@ -43,9 +55,12 @@ export type AttentionReason = { text: string; severity: "bad" | "warn" | "muted"
 
 /** Reasons a site needs attention, most urgent first. Empty when all is well. */
 export function attentionReasons(
-  site: Pick<FleetSite, "state" | "report" | "excluded"> & { vulns?: VulnerableItem[] },
+  site: Pick<FleetSite, "state" | "report" | "excluded" | "loginDays" | "newAdmins"> & { vulns?: VulnerableItem[]; now?: number },
 ): AttentionReason[] {
   const reasons: AttentionReason[] = [];
+  for (const event of site.newAdmins) {
+    reasons.push({ text: `New administrator: ${event.data.name || event.data.login} (${event.data.login})`, severity: "bad" });
+  }
   const vulnerable = site.vulns?.length ?? 0;
   if (vulnerable > 0) {
     reasons.push({ text: `${vulnerable} vulnerable ${vulnerable === 1 ? "item" : "items"}`, severity: "bad" });
@@ -61,7 +76,8 @@ export function attentionReasons(
   if (critical > 0) {
     reasons.push({ text: `${critical} critical Site Health ${critical === 1 ? "issue" : "issues"}`, severity: "bad" });
   }
-  if (r.failed_logins_24h >= 20) reasons.push({ text: `${r.failed_logins_24h} failed logins`, severity: "bad" });
+  const logins = siteLoginAttention(site);
+  if (logins) reasons.push(logins);
   const pending = pendingUpdates(r, site.excluded);
   if (pending.core) reasons.push({ text: `WordPress ${pending.core} available`, severity: "warn" });
   const updates = pending.plugins.length + pending.themes.length;
@@ -69,4 +85,15 @@ export function attentionReasons(
     reasons.push({ text: `${updates} plugin/theme ${updates === 1 ? "update" : "updates"}`, severity: "warn" });
   }
   return reasons;
+}
+
+/** Whether a site's failed logins need attention (a spike, or many with no protection). */
+export function siteLoginAttention(site: { report: FleetSite["report"]; loginDays: DayCounts[]; now?: number }) {
+  if (!site.report) return null;
+  return loginAttention({
+    total24h: site.report.failed_logins_24h,
+    history: site.loginDays,
+    protection: loginProtection(site.report),
+    now: site.now ?? Date.now(),
+  });
 }

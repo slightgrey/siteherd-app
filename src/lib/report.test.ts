@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { editedPlugins, integrityProblems, parseReport, pendingUpdates, ssoUserFor, translationOwner } from "./report";
+import { editedPlugins, failedLoginSources, integrityProblems, parseReport, pendingUpdates, ssoUserFor, translationOwner } from "./report";
 
 const v2 = {
   schema: 2,
@@ -136,5 +136,39 @@ describe("summaries", () => {
     expect([...edited.keys()]).toEqual(["akismet/akismet.php"]);
     expect(edited.get("akismet/akismet.php")?.modified_count).toBe(1);
     expect(editedPlugins(parseReport({ ...v2, integrity: null })!).size).toBe(0);
+  });
+});
+
+describe("failedLoginSources", () => {
+  it("lists sources with failures, most first", () => {
+    const r = parseReport({ ...v2, schema: 7, failed_logins_by_source: { login: 40, xmlrpc: 3100, rest: 0, other: 10 } })!;
+    expect(failedLoginSources(r)).toEqual([
+      { source: "xmlrpc", label: "XML-RPC", count: 3100 },
+      { source: "login", label: "Login forms", count: 40 },
+      { source: "other", label: "Unknown", count: 10 },
+    ]);
+  });
+
+  it("is null for plugins that don't report sources", () => {
+    expect(failedLoginSources(parseReport(v2)!)).toBeNull();
+  });
+
+  it("treats missing or malformed counts as zero", () => {
+    const r = parseReport({ ...v2, failed_logins_by_source: { xmlrpc: 5, login: "x" } })!;
+    expect(failedLoginSources(r)).toEqual([{ source: "xmlrpc", label: "XML-RPC", count: 5 }]);
+  });
+});
+
+describe("schema 8 login fields", () => {
+  it("parses hourly counts and hardening", () => {
+    const r = parseReport({ ...v2, schema: 8, failed_logins_hourly: [{ hour: 1793264400, xmlrpc: 2 }], hardening: { xmlrpc_off: true } })!;
+    expect(r.failed_logins_hourly).toEqual([{ hour: 1793264400, login: 0, xmlrpc: 2, rest: 0, other: 0 }]);
+    expect(r.hardening).toEqual({ xmlrpc_off: true });
+  });
+
+  it("defaults for older reports", () => {
+    const r = parseReport(v2)!;
+    expect(r.failed_logins_hourly).toEqual([]);
+    expect(r.hardening).toBeNull();
   });
 });

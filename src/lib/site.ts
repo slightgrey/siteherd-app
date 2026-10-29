@@ -6,6 +6,7 @@ import { db } from "@/db";
 import { reports, sites } from "@/db/schema";
 import { loadExclusions } from "@/lib/exclusions";
 import { isUuid } from "@/lib/ids";
+import { loadLoginDays, loadNewAdmins } from "@/lib/login-data";
 import { parseReport } from "@/lib/report";
 import { requireUser } from "@/lib/session";
 import { ensureFreshFeed, loadVulns } from "@/lib/vuln-feed";
@@ -29,10 +30,17 @@ export const loadSite = cache(async (id: string) => {
   const now = Date.now();
   const report = parseReport(latest[0]?.payload);
   await ensureFreshFeed();
-  const vulns = (await loadVulns([{ id: site.id, report }])).get(site.id)!;
+  const [vulns, loginDays, newAdmins] = await Promise.all([
+    loadVulns([{ id: site.id, report }]).then((m) => m.get(site.id)!),
+    // 30 days for the chart on the Logins page; the attention check uses the last 8.
+    loadLoginDays([site.id], 30).then((m) => m.get(site.id)!),
+    loadNewAdmins([site.id]).then((m) => m.get(site.id)!),
+  ]);
   return {
     site,
     vulns,
+    loginDays,
+    newAdmins,
     now,
     excluded,
     state: siteState(site.lastReportAt, now),

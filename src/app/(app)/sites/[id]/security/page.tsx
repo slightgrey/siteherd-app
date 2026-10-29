@@ -1,7 +1,7 @@
 import { ScrollToHash } from "@/components/scroll-to-hash";
 import { VulnerabilitiesCard } from "@/components/vulnerabilities-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CoreIntegrity, FailedLoginsCard, PluginIntegrityList, SectionTitle, WithSite } from "../sections";
+import { CoreIntegrity, PluginIntegrityList, SectionTitle, WithSite } from "../sections";
 
 export const metadata = { title: "Security · WP Siteherd" };
 
@@ -10,7 +10,7 @@ export default function SiteSecurityPage({ params }: PageProps<"/sites/[id]/secu
     <>
       <SectionTitle
         title="Security"
-        description="Known vulnerabilities in what is installed, files compared with official wordpress.org checksums once a day, and failed logins."
+        description="Known vulnerabilities in what is installed, files compared with official wordpress.org checksums once a day. Failed logins are under Logins."
       />
       <WithSite params={params} needsReport>
         {({ report, now, vulns, site }) => (
@@ -37,9 +37,6 @@ export default function SiteSecurityPage({ params }: PageProps<"/sites/[id]/secu
                 <PluginIntegrityList integrity={report.integrity} report={report} />
               </CardContent>
             </Card>
-            <div id="logins" className="scroll-mt-6">
-              <FailedLoginsCard report={report} />
-            </div>
           </div>
         )}
       </WithSite>

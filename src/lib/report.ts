@@ -96,6 +96,26 @@ const RollbackSchema = z.object({
   kept_at: str,
 });
 
+// Schema 7+: failed logins in the last 24 hours per source. "other" holds counts
+// the plugin stored before it recorded sources.
+const FailedLoginSourcesSchema = z.object({ login: count, xmlrpc: count, rest: count, other: count });
+
+// Schema 8+: the same counts per hour (hour = Unix seconds the hour starts), and login hardening switches.
+const FailedLoginHourSchema = FailedLoginSourcesSchema.extend({ hour: z.number().int().nonnegative() });
+const HardeningSchema = z.object({ xmlrpc_off: z.boolean().catch(false) });
+
+// Schema 9+: WP Siteherd's own login lockout. `active` is false while it's off or
+// standing down for another lockout plugin (`conflict`).
+const LockoutSchema = z.object({
+  enabled: z.boolean().catch(false),
+  active: z.boolean().catch(false),
+  conflict: nullableStr,
+  max_retries: z.number().int().positive().catch(5),
+  lockout_minutes: z.number().int().positive().catch(15),
+  lockouts_24h: count,
+  blocked_24h: count,
+});
+
 const ReportSchema = z.object({
   schema: z.number().catch(1),
   plugin_version: str,
@@ -112,6 +132,10 @@ const ReportSchema = z.object({
   themes: z.array(ThemeSchema).catch([]),
   translations: z.array(TranslationSchema).catch([]),
   failed_logins_24h: count,
+  failed_logins_by_source: FailedLoginSourcesSchema.nullable().catch(null),
+  failed_logins_hourly: z.array(FailedLoginHourSchema).catch([]),
+  hardening: HardeningSchema.nullable().catch(null),
+  lockout: LockoutSchema.nullable().catch(null),
   health: HealthSchema.nullable().catch(null),
   integrity: IntegritySchema.nullable().catch(null),
   sso: SsoSchema.nullable().catch(null),
@@ -127,6 +151,25 @@ export type Integrity = z.infer<typeof IntegritySchema>;
 export type PluginIntegrity = z.infer<typeof PluginIntegritySchema>;
 export type Sso = z.infer<typeof SsoSchema>;
 export type Translation = z.infer<typeof TranslationSchema>;
+export type Lockout = z.infer<typeof LockoutSchema>;
+export type FailedLoginSource = keyof z.infer<typeof FailedLoginSourcesSchema>;
+
+export const FAILED_LOGIN_SOURCE_LABELS: Record<FailedLoginSource, string> = {
+  login: "Login forms",
+  xmlrpc: "XML-RPC",
+  rest: "REST API",
+  other: "Unknown",
+};
+
+/** Sources with failed logins, most first. Null when the plugin doesn't report sources (schema < 7). */
+export function failedLoginSources(report: Report) {
+  const by = report.failed_logins_by_source;
+  if (!by) return null;
+  return (Object.keys(FAILED_LOGIN_SOURCE_LABELS) as FailedLoginSource[])
+    .map((source) => ({ source, label: FAILED_LOGIN_SOURCE_LABELS[source], count: by[source] }))
+    .filter((s) => s.count > 0)
+    .sort((a, b) => b.count - a.count);
+}
 
 /** The site's icon URL from the report, if it's a plain http(s) URL. */
 export function siteIconUrl(report: Report | null) {

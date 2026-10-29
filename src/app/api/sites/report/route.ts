@@ -1,6 +1,8 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { reports, sites } from "@/db/schema";
+import { previousReport, recordLoginData } from "@/lib/login-data";
+import { parseReport } from "@/lib/report";
 import { authenticateSiteRequest, parseJsonObject } from "@/lib/site-auth";
 
 export async function POST(request: Request) {
@@ -12,6 +14,7 @@ export async function POST(request: Request) {
   if (payload instanceof Response) return payload;
 
   const inserted = await db.transaction(async (tx) => {
+    const prev = await previousReport(tx, site.id);
     const [row] = await tx
       .insert(reports)
       .values({ siteId: site.id, signature, payload })
@@ -19,6 +22,8 @@ export async function POST(request: Request) {
       .returning({ id: reports.id, receivedAt: reports.receivedAt });
     if (row) {
       await tx.update(sites).set({ lastReportAt: row.receivedAt }).where(eq(sites.id, site.id));
+      const next = parseReport(payload);
+      if (next) await recordLoginData(tx, site.id, prev, next);
     }
     return row;
   });

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { EmptyState, PageHeader } from "@/components/page-header";
-import { IntegrityBadge, ToneBadge } from "@/components/report-badges";
+import { IntegrityBadge } from "@/components/report-badges";
 import { timeAgo } from "@/components/site-status";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { VulnerabilitiesCard, groupFleetVulns } from "@/components/vulnerabilities-card";
@@ -14,7 +14,7 @@ export const metadata = { title: "Security & Vulnerability · WP Siteherd" };
 export default function SecurityPage() {
   return (
     <>
-      <PageHeader title="Security & Vulnerability" description="Known vulnerabilities, file integrity and failed logins across all your sites." />
+      <PageHeader title="Security & Vulnerability" description="Known vulnerabilities and file integrity across all your sites. Failed logins are under Login attacks." />
       <Suspense fallback={<p className="mt-8 text-sm text-muted-foreground">Loading…</p>}>
         <SecurityOverview />
       </Suspense>
@@ -36,10 +36,6 @@ async function SecurityOverview() {
     return p.total > 0 ? 0 : p.coreError ? 1 : 3;
   };
   const byIntegrity = [...reported].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
-  const logins = reported
-    .filter((s) => s.report!.failed_logins_24h > 0)
-    .sort((a, b) => b.report!.failed_logins_24h - a.report!.failed_logins_24h);
-
   return (
     <div className="mt-6 grid gap-6">
       <VulnerabilitiesCard groups={groupFleetVulns(reported)} now={now} updatesHref="/updates/plugins" />
@@ -94,43 +90,6 @@ async function SecurityOverview() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Failed logins (last 24 hours)</CardTitle>
-          <CardDescription>Counts only. A high number usually means someone is guessing passwords.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {logins.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No failed logins on any site.</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Site</TableHead>
-                  <TableHead>Failed logins</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {logins.map((site) => {
-                  const n = site.report!.failed_logins_24h;
-                  return (
-                    <TableRow key={site.id}>
-                      <TableCell>
-                        <Link href={`/sites/${site.id}`} className="font-medium hover:underline">
-                          {site.name}
-                        </Link>
-                      </TableCell>
-                      <TableCell>
-                        <ToneBadge t={n >= 20 ? "bad" : "warn"}>{n}</ToneBadge>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }

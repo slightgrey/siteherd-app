@@ -34,7 +34,15 @@ const nav: NavItem[] = [
       { href: "/updates/translations", label: "Translations" },
     ],
   },
-  { href: "/security", label: "Security & Vulnerability", icon: ShieldCheck },
+  {
+    href: "/security",
+    label: "Security & Vulnerability",
+    icon: ShieldCheck,
+    children: [
+      { href: "/security", label: "Vulnerabilities & files" },
+      { href: "/security/logins", label: "Login attacks" },
+    ],
+  },
   { href: "/health", label: "Site Health", icon: HeartPulse },
   { href: "/labels", label: "Labels", icon: Tags },
 ];
@@ -63,7 +71,7 @@ export function NavItems({ activePath }: { activePath: string | null }) {
             <SidebarMenuSub>
               {children.map((c) => (
                 <SidebarMenuSubItem key={c.href}>
-                  <SidebarMenuSubButton render={<Link href={c.href} />} isActive={isActive(activePath, c.href)}>
+                  <SidebarMenuSubButton render={<Link href={c.href} />} isActive={activePath === c.href}>
                     <span>{c.label}</span>
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>

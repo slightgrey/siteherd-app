@@ -1,4 +1,4 @@
-import { ChevronRight, HeartPulse, PlugZap, RefreshCw } from "lucide-react";
+import { ChevronRight, HeartPulse, PlugZap, RefreshCw, UserMinus, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/page-header";
@@ -98,8 +98,19 @@ function EntryIcon({ entry }: { entry: ActivityEntry }) {
         ? (entry.health?.critical ?? 0) > 0 || (entry.files?.problems ?? 0) > 0
           ? "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300"
           : "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300"
-        : "bg-muted text-muted-foreground";
-  const Icon = entry.kind === "update" ? RefreshCw : entry.kind === "checks" ? HeartPulse : PlugZap;
+        : entry.kind === "admin" && entry.added
+          ? "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300"
+          : "bg-muted text-muted-foreground";
+  const Icon =
+    entry.kind === "update"
+      ? RefreshCw
+      : entry.kind === "checks"
+        ? HeartPulse
+        : entry.kind === "admin"
+          ? entry.added
+            ? UserPlus
+            : UserMinus
+          : PlugZap;
   return (
     <span className={cn("relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full", tone)}>
       <Icon className="size-4" />
@@ -167,6 +178,15 @@ function EntryBody({ entry, now }: { entry: ActivityEntry; now: number }) {
             ))}
         </div>
       </div>
+    );
+  }
+
+  if (entry.kind === "admin") {
+    return (
+      <span>
+        <span className="font-medium">{entry.added ? "New administrator" : "Administrator removed"}:</span> {entry.name || entry.login}{" "}
+        <span className="text-muted-foreground">({entry.login})</span>
+      </span>
     );
   }
 

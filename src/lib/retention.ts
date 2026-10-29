@@ -28,6 +28,8 @@ export async function pruneReports(): Promise<number | null> {
     const [{ locked }] = await lock`select pg_try_advisory_lock(${LOCK_KEY}) as locked`;
     if (!locked) return null;
     try {
+      // Failed-login history is kept for 90 days (the Logins chart shows 30).
+      await lock`delete from failed_login_hours where hour < now() - interval '90 days'`;
       let total = 0;
       for (;;) {
         const deleted = await lock`

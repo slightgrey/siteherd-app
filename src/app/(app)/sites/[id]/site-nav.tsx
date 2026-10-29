@@ -3,6 +3,7 @@
 import {
   Code2,
   HeartPulse,
+  KeyRound,
   Languages,
   LayoutDashboard,
   Palette,
@@ -15,7 +16,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-export type SiteNavCounts = { plugins: number; themes: number; core: number; translations: number; critical: number; files: number };
+export type SiteNavCounts = { plugins: number; themes: number; core: number; translations: number; critical: number; files: number; logins: number };
 
 type Item = { slug: string; label: string; icon: React.ComponentType<{ className?: string }>; count?: number; alert?: boolean };
 
@@ -43,6 +44,7 @@ export function SiteNav({ siteId, counts }: { siteId: string; counts: SiteNavCou
       items: [
         { slug: "health", label: "Site Health", icon: HeartPulse, count: counts?.critical, alert: true },
         { slug: "security", label: "Security", icon: ShieldCheck, count: counts?.files, alert: true },
+        { slug: "logins", label: "Logins", icon: KeyRound, count: counts?.logins, alert: true },
       ],
     },
     { items: [{ slug: "settings", label: "Settings", icon: Settings }] },

@@ -159,6 +159,44 @@ export const vulnerabilities = pgTable(
   (t) => [primaryKey({ columns: [t.id, t.softwareType, t.slug] }), index("vulnerabilities_slug_idx").on(t.softwareType, t.slug)],
 );
 
+// Failed logins per site per hour and source, from the plugin's hourly buckets
+// (schema 8+). Each report re-sends the last 24 hours; counts only grow within
+// an hour, so upserts keep the larger value. Pruned after 90 days (retention.ts).
+export const failedLoginHours = pgTable(
+  "failed_login_hours",
+  {
+    siteId: uuid("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+    hour: timestamp("hour", { withTimezone: true }).notNull(),
+    login: integer("login").notNull().default(0),
+    xmlrpc: integer("xmlrpc").notNull().default(0),
+    rest: integer("rest").notNull().default(0),
+    other: integer("other").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.siteId, t.hour] })],
+);
+
+export const SITE_EVENT_KINDS = ["admin_added", "admin_removed"] as const;
+export type SiteEventKind = (typeof SITE_EVENT_KINDS)[number];
+
+// Things noticed when a report arrives, e.g. an administrator account that
+// wasn't in the previous report. admin_added stays flagged until dismissed.
+export const siteEvents = pgTable(
+  "site_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    siteId: uuid("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: SITE_EVENT_KINDS }).notNull(),
+    data: jsonb("data").$type<{ id: number; login: string; name: string }>().notNull(),
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+    dismissedAt: timestamp("dismissed_at", { withTimezone: true }),
+  },
+  (t) => [index("site_events_site_at_idx").on(t.siteId, t.at)],
+);
+
 // Bookkeeping for background jobs: the "wordfence" feed sync and "report_retention".
 export const feedState = pgTable("feed_state", {
   name: text("name").primaryKey(),
@@ -197,3 +235,4 @@ export type Site = typeof sites.$inferSelect;
 export type Report = typeof reports.$inferSelect;
 export type UpdateJob = typeof updateJobs.$inferSelect;
 export type Label = typeof labels.$inferSelect;
+export type SiteEvent = typeof siteEvents.$inferSelect;

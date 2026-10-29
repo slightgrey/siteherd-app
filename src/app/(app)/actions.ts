@@ -1,13 +1,15 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { signOut } from "@/auth";
 import { db } from "@/db";
-import { sites } from "@/db/schema";
+import { reports, sites } from "@/db/schema";
 import { generateSecret } from "@/lib/hmac";
 import { isUuid } from "@/lib/ids";
 import { LABEL_COLOR_KEYS, type LabelColor } from "@/lib/label-colors";
+import { dismissEvent } from "@/lib/login-data";
+import { parseReport } from "@/lib/report";
 import { createLabel, deleteLabel, setSiteLabel, updateLabel, type LabelResult } from "@/lib/labels";
 import { requireUser } from "@/lib/session";
 import { callSite } from "@/lib/site-client";
@@ -127,6 +129,76 @@ export async function resyncSite(siteId: string): Promise<{ ok: true } | { ok: f
   } catch (e) {
     return { ok: false, error: `Couldn't reach the site: ${e instanceof Error ? e.message : String(e)}` };
   }
+}
+
+type SiteSettingsResult = { ok: true } | { ok: false; error: string };
+type SiteSettings = { xmlrpc_off?: boolean; lockout?: Record<string, unknown> & { enabled?: boolean } };
+
+/**
+ * Send login-protection settings to a site's signed POST /settings. The plugin
+ * saves them and sends a fresh report before answering, so a page refresh
+ * shows them. `check` confirms the site echoed the change back.
+ */
+async function sendSiteSettings(
+  siteId: string,
+  body: Record<string, unknown>,
+  minPlugin: { schema: number; version: string },
+  check: (settings: SiteSettings) => boolean,
+): Promise<SiteSettingsResult> {
+  const user = await requireUser();
+  if (!isUuid(siteId)) return { ok: false, error: "Invalid request." };
+  const site = await db.query.sites.findFirst({
+    where: and(eq(sites.id, siteId), eq(sites.userId, user.id)),
+    with: { reports: { orderBy: [desc(reports.receivedAt)], limit: 1 } },
+  });
+  if (!site) return { ok: false, error: "Site not found." };
+  const outdated = `Update the WP Siteherd plugin on this site to ${minPlugin.version} or later first.`;
+  if ((parseReport(site.reports[0]?.payload)?.schema ?? 0) < minPlugin.schema) return { ok: false, error: outdated };
+  try {
+    const res = await callSite(site, "POST", "/settings", body, 30_000);
+    if (res.status === 403) return { ok: false, error: "The site's firewall or security plugin blocked the dashboard (HTTP 403)." };
+    if (res.status === 404) return { ok: false, error: outdated };
+    if (res.status === 401) return { ok: false, error: "The site rejected the request. Is the plugin connected with this site's key?" };
+    if (res.status !== 200) return { ok: false, error: `The site answered with HTTP ${res.status}.` };
+    const settings = (res.body as { settings?: SiteSettings }).settings;
+    if (!settings || !check(settings)) return { ok: false, error: "The site didn't save the setting." };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: `Couldn't reach the site: ${e instanceof Error ? e.message : String(e)}` };
+  }
+}
+
+/** Block (or allow again) XML-RPC logins on a site. */
+export async function setXmlrpcOff(siteId: string, off: boolean): Promise<SiteSettingsResult> {
+  if (typeof off !== "boolean") return { ok: false, error: "Invalid request." };
+  return sendSiteSettings(siteId, { xmlrpc_off: off }, { schema: 8, version: "0.9.0" }, (s) => s.xmlrpc_off === off);
+}
+
+const LockoutInput = z.object({
+  enabled: z.boolean(),
+  max_retries: z.number().int().min(3).max(20).optional(),
+  lockout_minutes: z.number().int().min(5).max(1440).optional(),
+});
+
+/** Turn WP Siteherd's login lockout on or off on a site, optionally with new limits. */
+export async function setLoginLockout(siteId: string, input: unknown): Promise<SiteSettingsResult> {
+  const parsed = LockoutInput.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Invalid request." };
+  return sendSiteSettings(siteId, { lockout: parsed.data }, { schema: 9, version: "0.10.0" }, (s) => s.lockout?.enabled === parsed.data.enabled);
+}
+
+/** Forget every lockout on a site, e.g. after a real user locked themselves out. */
+export async function clearLoginLockouts(siteId: string): Promise<SiteSettingsResult> {
+  return sendSiteSettings(siteId, { unlock_all: true }, { schema: 9, version: "0.10.0" }, () => true);
+}
+
+/** "That was me": stop flagging an administrator that appeared on a site. */
+export async function dismissSiteEvent(siteId: string, eventId: string): Promise<{ ok: boolean }> {
+  const user = await requireUser();
+  if (!isUuid(siteId) || !isUuid(eventId)) return { ok: false };
+  const site = await db.query.sites.findFirst({ columns: { id: true }, where: and(eq(sites.id, siteId), eq(sites.userId, user.id)) });
+  if (!site) return { ok: false };
+  return { ok: await dismissEvent(site.id, eventId) };
 }
 
 /** Remove a job that is still waiting in a site's queue. */
