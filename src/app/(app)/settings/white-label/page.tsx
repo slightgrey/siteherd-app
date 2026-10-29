@@ -15,8 +15,8 @@ export default function WhiteLabelPage() {
 }
 
 async function WhiteLabel() {
-  const user = await requireUser();
   await connection();
+  const user = await requireUser();
   const settings = await loadUserSettings(user.id);
   return <WhiteLabelForm agencyName={settings.agencyName ?? ""} />;
 }

@@ -41,12 +41,13 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
 
 // The agency name from Settings → White label, else "WordPress fleet".
 async function BrandSubtitle() {
-  const user = await requireUser();
   await connection();
+  const user = await requireUser();
   return brandSubtitle((await loadUserSettings(user.id)).agencyName);
 }
 
 async function UserMenu() {
+  await connection();
   const user = await requireUser();
   return (
     <SidebarMenu>

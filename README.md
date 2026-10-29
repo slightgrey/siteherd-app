@@ -20,6 +20,7 @@ It's built for agencies and freelancers. Each site runs the companion plugin, **
 - **Edited-plugin protection:** plugins whose files differ from wordpress.org are flagged, and updating them requires confirmation.
 - **One-click login:** open wp-admin on any site from a signed, single-use link.
 - **Labels:** group sites by client or agency.
+- **White label:** your agency's name in the dashboard, and in the plugin on your clients' sites ("{Agency} WordPress Manager").
 - **Light, dark and system themes.**
 
 ## Screenshots
@@ -33,7 +34,9 @@ It's built for agencies and freelancers. Each site runs the companion plugin, **
 | ![Vulnerabilities](docs/screenshots/vulnerabilities.png) | ![Add plugin](docs/screenshots/add-plugin.png) |
 | **Vulnerabilities** across all sites | **Add plugin** from wordpress.org |
 | ![Files & logins](docs/screenshots/site-security.png) | ![Dark mode](docs/screenshots/dashboard-dark.png) |
-| **Site security:** vulnerabilities, file integrity, failed logins | **Dark mode** |
+| **Site security:** vulnerabilities and file integrity | **Dark mode** |
+| ![White label settings](docs/screenshots/settings.png) | |
+| **Settings:** white label with your agency's name | |
 
 ## Stack
 

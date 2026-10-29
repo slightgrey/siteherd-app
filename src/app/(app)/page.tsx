@@ -54,8 +54,8 @@ export default function DashboardPage() {
 
 // "Howdy, {agency}!" once an agency name is set in Settings → White label.
 async function FleetTitle() {
-  const user = await requireUser();
   await connection();
+  const user = await requireUser();
   return fleetTitle((await loadUserSettings(user.id)).agencyName);
 }
 
