@@ -16,20 +16,20 @@ export type ClientJob = {
 };
 
 const resultLook: Record<UpdateResult["status"], { tone: "good" | "warn" | "bad" | "muted"; label: string; icon: React.ReactNode }> = {
-  updated: { tone: "good", label: "Updated", icon: <CheckCircle2 className="size-4 text-green-600 dark:text-green-400" /> },
-  rolled_back: { tone: "warn", label: "Rolled back", icon: <RotateCcw className="size-4 text-amber-600 dark:text-amber-400" /> },
-  failed: { tone: "bad", label: "Failed", icon: <XCircle className="size-4 text-red-600 dark:text-red-400" /> },
+  updated: { tone: "good", label: "Updated", icon: <CheckCircle2 className="size-4 text-good" /> },
+  rolled_back: { tone: "warn", label: "Rolled back", icon: <RotateCcw className="size-4 text-warn" /> },
+  failed: { tone: "bad", label: "Failed", icon: <XCircle className="size-4 text-bad" /> },
   skipped: { tone: "muted", label: "Skipped", icon: <MinusCircle className="size-4 text-muted-foreground" /> },
-  installed: { tone: "good", label: "Installed", icon: <Download className="size-4 text-green-600 dark:text-green-400" /> },
-  activated: { tone: "good", label: "Activated", icon: <Power className="size-4 text-green-600 dark:text-green-400" /> },
-  deactivated: { tone: "good", label: "Deactivated", icon: <PowerOff className="size-4 text-green-600 dark:text-green-400" /> },
-  deleted: { tone: "good", label: "Deleted", icon: <Trash2 className="size-4 text-green-600 dark:text-green-400" /> },
+  installed: { tone: "good", label: "Installed", icon: <Download className="size-4 text-good" /> },
+  activated: { tone: "good", label: "Activated", icon: <Power className="size-4 text-good" /> },
+  deactivated: { tone: "good", label: "Deactivated", icon: <PowerOff className="size-4 text-good" /> },
+  deleted: { tone: "good", label: "Deleted", icon: <Trash2 className="size-4 text-good" /> },
 };
 
 // Installing or activating a plugin that broke the site: it was deactivated again.
 const pluginActionLook: typeof resultLook = {
   ...resultLook,
-  rolled_back: { tone: "warn", label: "Deactivated again", icon: <RotateCcw className="size-4 text-amber-600 dark:text-amber-400" /> },
+  rolled_back: { tone: "warn", label: "Deactivated again", icon: <RotateCcw className="size-4 text-warn" /> },
 };
 
 const JOB_TITLES: Record<JobKind, string> = {
@@ -59,8 +59,8 @@ function showsVersions(kind: JobKind) {
 // means the site broke so the newer version was put back again.
 const rollbackLook: typeof resultLook = {
   ...resultLook,
-  updated: { tone: "good", label: "Restored", icon: <RotateCcw className="size-4 text-green-600 dark:text-green-400" /> },
-  rolled_back: { tone: "warn", label: "Reverted", icon: <RotateCcw className="size-4 text-amber-600 dark:text-amber-400" /> },
+  updated: { tone: "good", label: "Restored", icon: <RotateCcw className="size-4 text-good" /> },
+  rolled_back: { tone: "warn", label: "Reverted", icon: <RotateCcw className="size-4 text-warn" /> },
 };
 
 export function jobTitle(job: Pick<ClientJob, "kind" | "items">) {

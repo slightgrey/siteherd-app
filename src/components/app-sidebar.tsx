@@ -5,8 +5,6 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -21,22 +19,21 @@ export function AppSidebar({ footer }: { footer: React.ReactNode }) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={<Link href="/" />}>
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground">
-                S
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-sidebar-primary font-display text-[15px] font-bold tracking-tight text-sidebar-primary-foreground">
+                sh
               </span>
-              <span className="font-semibold">WP Siteherd</span>
+              <span className="grid leading-tight">
+                <span className="font-display text-base font-semibold tracking-tight">SiteHerd</span>
+                <span className="text-xs text-sidebar-muted">WordPress fleet</span>
+              </span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <Suspense fallback={<NavItems activePath={null} />}>
-              <NavLinks />
-            </Suspense>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <Suspense fallback={<NavItems activePath={null} />}>
+          <NavLinks />
+        </Suspense>
       </SidebarContent>
       <SidebarFooter>{footer}</SidebarFooter>
       <SidebarRail />

@@ -79,7 +79,7 @@ export function SiteNav({ siteId, counts }: { siteId: string; counts: SiteNavCou
                   <span
                     className={cn(
                       "rounded-full px-1.5 text-xs font-medium",
-                      alert ? "bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300" : "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300",
+                      alert ? "bg-bad-soft text-bad" : "bg-warn-soft text-warn",
                     )}
                   >
                     {count}

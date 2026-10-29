@@ -88,7 +88,7 @@ export function AddPluginSheet({ siteId, installed }: { siteId: string; installe
 
         <div className="flex-1 overflow-y-auto p-3">
           {error && (
-            <div className="m-2 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+            <div className="m-2 flex items-start gap-2 rounded-lg border border-bad/25 bg-bad-soft px-3 py-2 text-sm text-bad">
               <AlertTriangle className="mt-0.5 size-4 shrink-0" />
               {error}
             </div>
@@ -127,7 +127,7 @@ export function AddPluginSheet({ siteId, installed }: { siteId: string; installe
                       <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{p.description}</p>
                       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
-                          <Star className="size-3 fill-amber-400 text-amber-400" />
+                          <Star className="size-3 fill-brass text-brass" />
                           {(p.rating / 20).toFixed(1)} ({p.ratings.toLocaleString()})
                         </span>
                         <span>{installs(p.activeInstalls)}</span>
@@ -136,7 +136,7 @@ export function AddPluginSheet({ siteId, installed }: { siteId: string; installe
                       </div>
                       <div className="mt-3 flex gap-2">
                         {isInstalled ? (
-                          <span className="flex items-center gap-1 text-xs font-medium text-green-700 dark:text-green-400">
+                          <span className="flex items-center gap-1 text-xs font-medium text-good">
                             <Check className="size-3.5" />
                             Installed
                           </span>

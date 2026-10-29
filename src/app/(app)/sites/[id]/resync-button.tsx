@@ -47,9 +47,9 @@ export function ResyncButton({ siteId, compact = false }: { siteId: string; comp
       {result &&
         !result.ok &&
         (compact ? (
-          <p className="mt-1 max-w-56 text-xs whitespace-normal text-red-700 dark:text-red-400">{result.error}</p>
+          <p className="mt-1 max-w-56 text-xs whitespace-normal text-bad">{result.error}</p>
         ) : (
-          <p className="absolute top-full right-0 z-10 mt-1 w-72 rounded-md border bg-background px-3 py-2 text-xs text-red-700 dark:text-red-400 shadow-sm">
+          <p className="absolute top-full right-0 z-10 mt-1 w-72 rounded-md border bg-background px-3 py-2 text-xs text-bad shadow-sm">
             {result.error}
           </p>
         ))}

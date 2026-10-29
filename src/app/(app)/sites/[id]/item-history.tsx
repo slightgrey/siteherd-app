@@ -35,9 +35,9 @@ function headline(e: HistoryEntry) {
 }
 
 function EntryIcon({ e }: { e: HistoryEntry }) {
-  if (e.status === "failed") return <XCircle className="size-3.5 shrink-0 text-red-600 dark:text-red-400" />;
-  if (e.status === "rolled_back" || e.kind === "rollback") return <RotateCcw className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />;
-  return <CheckCircle2 className="size-3.5 shrink-0 text-green-600 dark:text-green-400" />;
+  if (e.status === "failed") return <XCircle className="size-3.5 shrink-0 text-bad" />;
+  if (e.status === "rolled_back" || e.kind === "rollback") return <RotateCcw className="size-3.5 shrink-0 text-warn" />;
+  return <CheckCircle2 className="size-3.5 shrink-0 text-good" />;
 }
 
 

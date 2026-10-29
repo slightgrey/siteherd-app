@@ -240,7 +240,7 @@ export function SitesList({ rows, labels, initial }: { rows: SiteListRow[]; labe
             />
             {chosen.length > 0 ? `${chosen.length} selected` : "Select all"}
           </label>
-          {bulk.text && <span className={cn("text-sm", bulk.ok ? "text-muted-foreground" : "text-red-700 dark:text-red-400")}>{bulk.text}</span>}
+          {bulk.text && <span className={cn("text-sm", bulk.ok ? "text-muted-foreground" : "text-bad")}>{bulk.text}</span>}
           <div className="ml-auto flex flex-wrap items-center gap-1">
             <Button variant="ghost" size="sm" disabled={bulk.busy || chosen.length === 0} onClick={resyncChosen}>
               <RefreshCw className={bulk.busy ? "animate-spin" : undefined} />

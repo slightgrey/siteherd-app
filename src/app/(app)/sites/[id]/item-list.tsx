@@ -148,13 +148,13 @@ export function ItemList({
   return (
     <div className="grid gap-4">
       {updates.error && (
-        <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+        <div className="flex items-start gap-2 rounded-lg border border-bad/25 bg-bad-soft px-4 py-3 text-sm text-bad">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           {updates.error}
         </div>
       )}
       {manageError && (
-        <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+        <div className="flex items-start gap-2 rounded-lg border border-bad/25 bg-bad-soft px-4 py-3 text-sm text-bad">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           {manageError}
         </div>
@@ -240,7 +240,7 @@ export function ItemList({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-red-700 hover:text-red-800 dark:text-red-400"
+                  className="text-bad hover:text-bad/80"
                   disabled={managing || !chosen.some(manageable("delete"))}
                   onClick={() => manage("delete", chosen)}
                 >
@@ -365,7 +365,7 @@ function Item({
           <HistoryMenu siteId={siteId} entries={row.history} trigger="link" />
         </div>
         <div className="mt-1 flex flex-wrap gap-1.5 md:hidden">{badges}</div>
-        {back.error && <p className="mt-1 text-xs text-red-700 dark:text-red-400">{back.error}</p>}
+        {back.error && <p className="mt-1 text-xs text-bad">{back.error}</p>}
       </div>
 
       <div className="w-36 shrink-0 text-sm">
@@ -449,7 +449,7 @@ function Version({ row }: { row: ItemRow }) {
   }
   return (
     <div>
-      <span className="flex items-center gap-1 font-mono text-xs text-green-700 dark:text-green-400">
+      <span className="flex items-center gap-1 font-mono text-xs text-good">
         {row.version}
         {!row.update && <CheckCircle2 className="size-3.5" />}
       </span>

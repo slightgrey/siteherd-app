@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 type SiteOption = { id: string; name: string; url: string; state: SiteState };
 
-const dot: Record<SiteState, string> = { ok: "bg-green-500", stale: "bg-amber-500", never: "bg-zinc-300 dark:bg-zinc-600" };
+const dot: Record<SiteState, string> = { ok: "bg-good", stale: "bg-warn", never: "bg-zinc-300 dark:bg-zinc-600" };
 
 /**
  * The site name and status in the site header, opening a searchable list of

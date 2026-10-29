@@ -11,8 +11,8 @@ export function siteState(lastReportAt: Date | null, now: number): SiteState {
 }
 
 const badgeStyles: Record<SiteState, string> = {
-  ok: "bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300",
-  stale: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300",
+  ok: "bg-good-soft text-good",
+  stale: "bg-warn-soft text-warn",
   never: "bg-muted text-muted-foreground",
 };
 const badgeLabels: Record<SiteState, string> = { ok: "Reporting", stale: "Stale", never: "Not connected" };

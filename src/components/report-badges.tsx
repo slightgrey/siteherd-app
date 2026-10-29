@@ -3,9 +3,9 @@ import type { Health, Integrity } from "@/lib/report";
 import { integrityProblems } from "@/lib/report";
 
 const tone = {
-  good: "bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300",
-  warn: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300",
-  bad: "bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300",
+  good: "bg-good-soft text-good",
+  warn: "bg-warn-soft text-warn",
+  bad: "bg-bad-soft text-bad",
   muted: "bg-muted text-muted-foreground",
 };
 

@@ -57,7 +57,7 @@ async function Core({ data }: { data: SiteData & { report: Report } }) {
         <CardContent className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             {!offer && (
-              <span className="flex items-center gap-1.5 text-sm text-green-700 dark:text-green-400">
+              <span className="flex items-center gap-1.5 text-sm text-good">
                 <CheckCircle2 className="size-4" />
                 This is the latest version.
               </span>

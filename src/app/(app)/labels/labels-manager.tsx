@@ -78,7 +78,7 @@ export function LabelsManager({ labels }: { labels: Label[] }) {
             Preview: <LabelChip label={{ name: name.trim(), color }} />
           </div>
         )}
-        {error && <p className="text-sm text-red-700 dark:text-red-400">{error}</p>}
+        {error && <p className="text-sm text-bad">{error}</p>}
       </form>
 
       {labels.length === 0 ? (
@@ -149,7 +149,7 @@ function LabelRow({ label }: { label: Label }) {
               Cancel
             </Button>
           </div>
-          {error && <p className="text-sm text-red-700 dark:text-red-400">{error}</p>}
+          {error && <p className="text-sm text-bad">{error}</p>}
         </form>
       </li>
     );
@@ -166,7 +166,7 @@ function LabelRow({ label }: { label: Label }) {
           <Pencil />
           Edit
         </Button>
-        <Button variant="ghost" size="xs" disabled={pending} onClick={remove} className="text-red-700 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">
+        <Button variant="ghost" size="xs" disabled={pending} onClick={remove} className="text-bad hover:text-bad/80">
           <Trash2 />
           Delete
         </Button>

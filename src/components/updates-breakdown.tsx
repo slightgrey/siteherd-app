@@ -22,7 +22,7 @@ function Line({ label, value }: { label: string; value: string | number | null }
       {value ? (
         <span className="font-medium tabular-nums">{value}</span>
       ) : (
-        <CheckCircle2 className="size-3.5 text-green-400 dark:text-green-600" aria-label="Up to date" />
+        <CheckCircle2 className="size-3.5 text-good" aria-label="Up to date" />
       )}
     </div>
   );

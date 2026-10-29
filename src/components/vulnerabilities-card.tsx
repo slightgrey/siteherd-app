@@ -69,7 +69,7 @@ export async function VulnerabilitiesCard({ groups, now, updatesHref }: { groups
       <CardContent className="p-0">
         {configured && feed?.syncedAt && groups.length === 0 && (
           <div className="flex items-center gap-3 px-6 py-8 text-sm">
-            <span className="flex size-10 items-center justify-center rounded-full bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-300">
+            <span className="flex size-10 items-center justify-center rounded-full bg-good-soft text-good">
               <ShieldCheck className="size-5" />
             </span>
             No known vulnerabilities in the installed versions.
@@ -103,9 +103,9 @@ export async function VulnerabilitiesCard({ groups, now, updatesHref }: { groups
                           <div>{v.title}</div>
                           <div className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
                             {v.fixedIn ? (
-                              <span className="text-green-700 dark:text-green-400">Fixed in {v.fixedIn}</span>
+                              <span className="text-good">Fixed in {v.fixedIn}</span>
                             ) : (
-                              <span className="text-red-700 dark:text-red-400">No fix yet: consider removing it</span>
+                              <span className="text-bad">No fix yet: consider removing it</span>
                             )}
                             {v.cve && <span className="font-mono">{v.cve}</span>}
                             {v.link && (

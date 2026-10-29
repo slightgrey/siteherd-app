@@ -162,7 +162,7 @@ export function BulkUpdateList({ type, items, active }: { type: UpdateType; item
             {chosen.length > 0 ? `${chosen.length} selected` : "Select all"}
           </label>
           {message && (
-            <span className={cn("flex items-center gap-1.5 text-sm", message.ok ? "text-muted-foreground" : "text-red-700 dark:text-red-400")}>
+            <span className={cn("flex items-center gap-1.5 text-sm", message.ok ? "text-muted-foreground" : "text-bad")}>
               {!message.ok && <AlertTriangle className="size-4 shrink-0" />}
               {message.text}
             </span>

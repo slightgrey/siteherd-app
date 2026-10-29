@@ -61,7 +61,7 @@ async function Translations({ data }: { data: SiteData & { report: Report } }) {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               {packs.length === 0 && (
-                <span className="flex items-center gap-1.5 text-sm text-green-700 dark:text-green-400">
+                <span className="flex items-center gap-1.5 text-sm text-good">
                   <CheckCircle2 className="size-4" />
                   Nothing to update.
                 </span>

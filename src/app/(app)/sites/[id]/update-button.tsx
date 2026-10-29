@@ -33,7 +33,7 @@ export function UpdateButton({
           {children}
         </Button>
       )}
-      {updates.error && <p className="text-xs text-red-700 dark:text-red-400">{updates.error}</p>}
+      {updates.error && <p className="text-xs text-bad">{updates.error}</p>}
     </div>
   );
 }

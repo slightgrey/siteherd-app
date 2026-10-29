@@ -92,11 +92,11 @@ function EntryIcon({ entry }: { entry: ActivityEntry }) {
   const tone =
     entry.kind === "update"
       ? entry.job.status === "failed" || entry.job.results.some((r) => r.status === "failed" || r.status === "rolled_back")
-        ? "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"
-        : "bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-300"
+        ? "bg-warn-soft text-warn"
+        : "bg-good-soft text-good"
       : entry.kind === "checks"
         ? (entry.health?.critical ?? 0) > 0 || (entry.files?.problems ?? 0) > 0
-          ? "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300"
+          ? "bg-bad-soft text-bad"
           : "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300"
         : entry.kind === "admin" && entry.added
           ? "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300"
@@ -130,7 +130,7 @@ function EntryBody({ entry, now }: { entry: ActivityEntry; now: number }) {
           </span>
           <JobStatusBadge job={job} />
         </div>
-        {job.error && <p className="text-sm text-red-700 dark:text-red-400">{job.error}</p>}
+        {job.error && <p className="text-sm text-bad">{job.error}</p>}
         {job.note && <p className="text-xs text-muted-foreground">{job.note}</p>}
         {n > 3 ? (
           // Big runs start collapsed so the timeline stays scannable.
