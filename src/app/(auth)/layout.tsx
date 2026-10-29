@@ -2,7 +2,7 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
   return (
     <main className="grid flex-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
       {/* Brand panel: the sidebar's night surface, so the login reads as the same product. */}
-      <section className="relative hidden flex-col justify-between overflow-hidden bg-sidebar p-12 text-sidebar-foreground lg:flex">
+      <section className="dark relative hidden flex-col justify-between overflow-hidden bg-sidebar p-12 text-sidebar-foreground lg:flex">
         <div className="flex items-center gap-3">
           <span className="flex size-9 items-center justify-center rounded-[10px] bg-sidebar-primary font-display text-base font-bold tracking-tight text-sidebar-primary-foreground">
             sh

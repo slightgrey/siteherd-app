@@ -13,10 +13,10 @@ import { cn } from "@/lib/utils";
 // light and dark surfaces). Light-mode contrast is low for REST and Unknown, so
 // the legend always shows the numbers and every bar has a tooltip.
 export const SOURCE_COLOR: Record<FailedLoginSource, string> = {
-  login: "bg-[#2a78d6] dark:bg-[#3987e5]",
-  xmlrpc: "bg-[#eb6834] dark:bg-[#d95926]",
-  rest: "bg-[#1baf7a] dark:bg-[#199e70]",
-  other: "bg-[#eda100] dark:bg-[#c98500]",
+  login: "bg-chart-1",
+  xmlrpc: "bg-chart-3",
+  rest: "bg-chart-2",
+  other: "bg-chart-5",
 };
 
 const SOURCES = Object.keys(FAILED_LOGIN_SOURCE_LABELS) as FailedLoginSource[];

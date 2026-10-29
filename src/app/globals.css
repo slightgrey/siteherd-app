@@ -87,16 +87,17 @@
   --chart-4: #9a5300;
   --chart-5: #566660;
   --radius: 0.625rem;
-  --sidebar: #0d1f1a;
-  --sidebar-foreground: #e3ece8;
-  --sidebar-muted: #8fa59d;
-  --sidebar-primary: #5fd0aa;
-  --sidebar-primary-foreground: #0d1f1a;
-  --sidebar-accent: #173029;
-  --sidebar-accent-foreground: #e3ece8;
-  --sidebar-border: #173029;
-  --sidebar-ring: #5fd0aa;
-  --sidebar-alert: #ff8a7e;
+  /* Light mode: a cool grey rail, set apart from the green-tinted page by tone and a hairline. */
+  --sidebar: #e7eaec;
+  --sidebar-foreground: #18201d;
+  --sidebar-muted: #56615d;
+  --sidebar-primary: #14594a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ffffff;
+  --sidebar-accent-foreground: #0f1a16;
+  --sidebar-border: #d3d8db;
+  --sidebar-ring: #14594a;
+  --sidebar-alert: #b42a24;
   --brass: #c9a24a;
   --good: #17784a;
   --good-soft: #ddf1e5;

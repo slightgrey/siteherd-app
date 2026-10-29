@@ -30,8 +30,8 @@ export function FailedLoginsCard({ report, days }: { report: Report; days: DayTo
       </CardHeader>
       <CardContent className="grid gap-6">
         <div className="grid gap-3">
-          <div className="flex items-center gap-3">
-            <span className="text-3xl font-semibold tabular-nums">{n.toLocaleString()}</span>
+          <div className="flex flex-wrap items-baseline gap-3">
+            <span className="font-display text-5xl font-semibold tracking-tight tabular-nums">{n.toLocaleString()}</span>
             <span className="text-sm text-muted-foreground">in the last 24 hours</span>
             {n > 0 && <FailedLoginsBadge count={n} />}
           </div>
@@ -41,20 +41,23 @@ export function FailedLoginsCard({ report, days }: { report: Report; days: DayTo
           {sources && sources.length > 0 && (
             <ul className="grid gap-2">
               {sources.map((s) => (
-                <li key={s.source} className="grid grid-cols-[7rem_1fr_auto] items-center gap-3 text-sm">
-                  <span>{s.label}</span>
-                  <div className="h-2 overflow-hidden rounded-full bg-muted">
+                <li key={s.source} className="grid grid-cols-[8rem_1fr_3.5rem] items-center gap-3 text-sm">
+                  <span className="flex items-center gap-2">
+                    <span className={cn("size-2 rounded-[3px]", SOURCE_COLOR[s.source])} />
+                    {s.label}
+                  </span>
+                  <div className="h-2.5 overflow-hidden rounded-full bg-muted">
                     <div className={cn("h-full rounded-full", SOURCE_COLOR[s.source])} style={{ width: `${(s.count / n) * 100}%` }} />
                   </div>
-                  <span className="tabular-nums text-muted-foreground">{s.count.toLocaleString()}</span>
+                  <span className="text-right font-medium tabular-nums">{s.count.toLocaleString()}</span>
                 </li>
               ))}
             </ul>
           )}
-          {hint && <p className="text-sm text-muted-foreground">{hint}</p>}
+          {hint && <p className="rounded-[10px] bg-accent/60 px-3 py-2 text-sm text-accent-foreground">{hint}</p>}
         </div>
-        <div className="grid gap-2">
-          <p className="text-sm font-medium">Last 30 days</p>
+        <div className="grid gap-2 border-t pt-5">
+          <p className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">Last 30 days</p>
           {hasHistory ? (
             <LoginTrendChart days={days} />
           ) : (
@@ -80,7 +83,7 @@ export function ProtectionCard({ siteId, report, protection }: { siteId: string;
       <CardContent className="grid gap-5">
         <div className="grid gap-2">
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="font-medium">Login lockout</span>
+            <span className="font-display text-[15px] font-semibold">Login lockout</span>
             {lockout &&
               (lockout.active ? (
                 <ToneBadge t="good">On</ToneBadge>
@@ -123,7 +126,7 @@ export function ProtectionCard({ siteId, report, protection }: { siteId: string;
         </div>
         <div className="grid gap-2 border-t pt-4">
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="font-medium">XML-RPC logins</span>
+            <span className="font-display text-[15px] font-semibold">XML-RPC logins</span>
             {report.hardening ? (
               protection.xmlrpcOff ? (
                 <ToneBadge t="good">Blocked</ToneBadge>
@@ -171,9 +174,21 @@ export function AdministratorsCard({ siteId, report, newAdmins, now }: { siteId:
             {admins.map((a) => {
               const event = isNew.get(a.id);
               return (
-                <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-                  <span>
-                    <span className="font-medium">{a.name || a.login}</span> <span className="text-muted-foreground">{a.login}</span>
+                <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm">
+                  <span className="flex min-w-0 items-center gap-3">
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold uppercase",
+                        event ? "bg-bad-soft text-bad" : "bg-accent text-primary",
+                      )}
+                    >
+                      {(a.name || a.login).slice(0, 2)}
+                    </span>
+                    <span className="grid min-w-0">
+                      <span className="truncate font-medium">{a.name || a.login}</span>
+                      <span className="truncate font-mono text-xs text-muted-foreground">{a.login}</span>
+                    </span>
                   </span>
                   {event && (
                     <span className="flex items-center gap-2">
@@ -210,7 +225,7 @@ export function LoginSparkline({ days }: { days: DayTotal[] }) {
       {days.map((d) => (
         <div
           key={d.day}
-          className="flex-1 rounded-t-[2px] bg-[#2a78d6] dark:bg-[#3987e5]"
+          className="flex-1 rounded-t-[2px] bg-primary"
           style={{ height: `${Math.max(d.total > 0 ? 8 : 0, (d.total / max) * 100)}%` }}
         />
       ))}

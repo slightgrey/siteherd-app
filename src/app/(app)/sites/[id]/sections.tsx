@@ -7,7 +7,6 @@ import { EmptyState } from "@/components/page-header";
 import { FailedLoginsBadge, HealthBadge, IntegrityBadge, ToneBadge } from "@/components/report-badges";
 import { timeAgo } from "@/components/site-status";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { encodeConnectionKey } from "@/lib/connection-key";
 import { attentionReasons } from "@/lib/fleet";
 import { integrityProblems, pendingUpdates, type Health, type Integrity, type PluginIntegrity, type Report } from "@/lib/report";
@@ -378,7 +377,7 @@ export function CoreIntegrity({ integrity, now }: { integrity: Integrity | null;
         <span className="text-sm text-muted-foreground">{checkedAgo(integrity.checked_at, now)}</span>
       </div>
       {core.status === "error" && <p className="mt-1 text-sm text-muted-foreground">{core.error}</p>}
-      <div className="mt-2 grid gap-1">
+      <div className="mt-3 grid gap-1 rounded-[10px] bg-muted/60 px-3 py-2 empty:hidden">
         <FileList kind="modified" files={core.modified} total={core.modified_count} />
         <FileList kind="missing" files={core.missing} total={core.missing_count} />
         <FileList kind="unexpected" where="in wp-admin, wp-includes or the site root" files={core.unexpected} total={core.unexpected_count} />
@@ -419,22 +418,28 @@ export function EnvironmentTable({ report }: { report: Report }) {
     ["Database", report.db_version || "—"],
     ["Language", report.locale || "—"],
     ["Multisite", report.is_multisite ? "Yes" : "No"],
-    ["Site address", report.site_url || "—"],
     ["WP Siteherd plugin", report.plugin_version || "—"],
+    ["Site address", report.site_url || "—"],
   ];
   return (
-    <div className="overflow-x-auto rounded-[14px] bg-card shadow-card ring-1 ring-border">
-      <Table>
-        <TableBody>
-          {rows.map(([label, value]) => (
-            <TableRow key={label}>
-              <TableCell className="w-48 pl-4 text-muted-foreground">{label}</TableCell>
-              <TableCell className="pr-4 font-mono text-xs">{value}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <section className="overflow-hidden rounded-[14px] bg-card shadow-card ring-1 ring-border" aria-label="Environment">
+      <h2 className="px-5 pt-4 pb-3 font-display text-lg font-semibold tracking-tight">Environment</h2>
+      <dl className="grid grid-cols-1 border-t sm:grid-cols-2 lg:grid-cols-3">
+        {rows.map(([label, value], i) => (
+          <div
+            key={label}
+            className={cn(
+              "grid min-w-0 gap-1 border-b px-5 py-3.5 sm:border-r",
+              // The site address is long: give it the full last row.
+              i === rows.length - 1 && "sm:col-span-2 lg:col-span-3 sm:border-r-0 border-b-0",
+            )}
+          >
+            <dt className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">{label}</dt>
+            <dd className="flex min-w-0 flex-wrap items-center gap-2 truncate font-mono text-[13px]">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
 

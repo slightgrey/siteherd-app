@@ -67,7 +67,7 @@ function isActive(pathname: string | null, href: string) {
 
 // Inactive rows are muted on the night sidebar; the active row lifts and its icon takes the accent.
 const buttonClass =
-  "h-9 rounded-[10px] px-3 font-medium text-sidebar-muted data-active:text-sidebar-accent-foreground data-active:[&_svg]:text-sidebar-primary";
+  "h-9 rounded-[10px] px-3 font-medium text-sidebar-muted data-active:text-sidebar-accent-foreground data-active:shadow-card data-active:[&_svg]:text-sidebar-primary";
 
 /** The menu itself. `activePath` is null in the Suspense fallback (no highlight yet). */
 export function NavItems({ activePath }: { activePath: string | null }) {

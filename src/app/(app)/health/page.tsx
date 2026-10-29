@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 import { Suspense } from "react";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { HealthBadge, ToneBadge } from "@/components/report-badges";
@@ -48,31 +49,81 @@ async function HealthOverview() {
       b.report!.health!.counts.recommended - a.report!.health!.counts.recommended,
   );
 
+  const totals = checked.reduce(
+    (t, s) => {
+      const c = s.report!.health!.counts;
+      return { critical: t.critical + c.critical, recommended: t.recommended + c.recommended, good: t.good + c.good };
+    },
+    { critical: 0, recommended: 0, good: 0 },
+  );
+  const summary = [
+    { label: "Critical", n: totals.critical, dot: "bg-bad" },
+    { label: "Recommended", n: totals.recommended, dot: "bg-warn" },
+    { label: "Passed", n: totals.good, dot: "bg-good" },
+  ];
+
   return (
     <div className="mt-6 grid gap-6">
-      <Card>
-        <CardHeader>
+      <section className="grid gap-3 rounded-[14px] bg-card px-6 py-5 shadow-card ring-1 ring-border" aria-label="Checks across all sites">
+        <div className="flex h-2.5 gap-1" aria-hidden="true">
+          {summary
+            .filter((x) => x.n > 0)
+            .map((x) => (
+              <span key={x.label} className={cn("rounded-full", x.dot)} style={{ flex: x.n }} />
+            ))}
+        </div>
+        <div className="flex flex-wrap gap-x-7 gap-y-2 text-[13px] text-muted-foreground">
+          {summary.map((x) => (
+            <span key={x.label} className="flex items-center gap-2">
+              <span className={cn("size-1.5 rounded-full", x.dot)} />
+              <strong className="font-display text-base font-semibold text-foreground tabular-nums">{x.n}</strong>
+              {x.label}
+            </span>
+          ))}
+          <span className="sm:ml-auto">
+            {checked.length} of {sites.length} {sites.length === 1 ? "site" : "sites"} checked
+          </span>
+        </div>
+      </section>
+
+      <Card className="gap-0 py-0">
+        <CardHeader className="py-4">
           <CardTitle>Issues across sites</CardTitle>
           <CardDescription>{issues.length === 0 ? "No issues on any site." : "Most widespread first."}</CardDescription>
         </CardHeader>
         {issues.length > 0 && (
-          <CardContent>
-            <ul className="divide-y">
+          <CardContent className="px-0">
+            <ul className="divide-y border-t">
               {issues.map((g) => (
-                <li key={g.key} className="py-3 first:pt-0 last:pb-0">
+                <li
+                  key={g.key}
+                  className={cn(
+                    "relative grid gap-1.5 px-5 py-3.5 transition-colors hover:bg-muted/60",
+                    "before:absolute before:inset-y-3 before:left-0 before:w-[3px] before:rounded-r-full",
+                    g.status === "critical" ? "before:bg-bad" : "before:bg-warn",
+                  )}
+                >
                   <div className="flex flex-wrap items-center gap-2">
                     <ToneBadge t={g.status === "critical" ? "bad" : "warn"}>
                       {g.status === "critical" ? "Critical" : "Recommended"}
                     </ToneBadge>
                     <span className="font-medium">{g.label}</span>
-                    {g.badge && <span className="text-xs text-muted-foreground">{g.badge}</span>}
+                    {g.badge && (
+                      <span className="rounded-md px-1.5 text-[11px] font-semibold tracking-[0.06em] text-muted-foreground uppercase ring-1 ring-border">
+                        {g.badge}
+                      </span>
+                    )}
                   </div>
-                  <div className="mt-1 flex flex-wrap gap-x-3 text-sm text-muted-foreground">
-                    <span>
-                      {g.sites.length} {g.sites.length === 1 ? "site" : "sites"}:
+                  <div className="flex flex-wrap items-center gap-1.5 text-[13px] text-muted-foreground">
+                    <span className="mr-1">
+                      {g.sites.length} {g.sites.length === 1 ? "site" : "sites"}
                     </span>
                     {g.sites.map((s) => (
-                      <Link key={s.id} href={`/sites/${s.id}`} className="hover:underline">
+                      <Link
+                        key={s.id}
+                        href={`/sites/${s.id}/health`}
+                        className="rounded-md bg-muted px-2 py-0.5 text-foreground ring-1 ring-border transition-colors hover:bg-accent hover:text-primary"
+                      >
                         {s.name}
                       </Link>
                     ))}
@@ -84,8 +135,8 @@ async function HealthOverview() {
         )}
       </Card>
 
-      <Card>
-        <CardHeader>
+      <Card className="gap-0 py-0">
+        <CardHeader className="py-4">
           <CardTitle>By site</CardTitle>
           {checked.length < sites.length && (
             <CardDescription>
@@ -94,7 +145,7 @@ async function HealthOverview() {
             </CardDescription>
           )}
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -103,6 +154,7 @@ async function HealthOverview() {
                 <TableHead>Critical</TableHead>
                 <TableHead>Recommended</TableHead>
                 <TableHead>Passed</TableHead>
+                <TableHead className="w-40">Checks</TableHead>
                 <TableHead>Checked</TableHead>
               </TableRow>
             </TableHeader>
@@ -112,18 +164,25 @@ async function HealthOverview() {
                 const at = new Date(h.checked_at);
                 return (
                   <TableRow key={site.id}>
-                    <TableCell>
-                      <Link href={`/sites/${site.id}`} className="font-medium hover:underline">
+                    <TableCell className="pl-5">
+                      <Link href={`/sites/${site.id}/health`} className="font-medium hover:text-primary">
                         {site.name}
                       </Link>
                     </TableCell>
                     <TableCell>
                       <HealthBadge health={h} />
                     </TableCell>
-                    <TableCell>{h.counts.critical}</TableCell>
-                    <TableCell>{h.counts.recommended}</TableCell>
-                    <TableCell>{h.counts.good}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className={cn("tabular-nums", h.counts.critical > 0 && "font-semibold text-bad")}>{h.counts.critical}</TableCell>
+                    <TableCell className={cn("tabular-nums", h.counts.recommended > 0 && "text-warn")}>{h.counts.recommended}</TableCell>
+                    <TableCell className="tabular-nums">{h.counts.good}</TableCell>
+                    <TableCell>
+                      <div className="flex h-1.5 w-32 gap-0.5 overflow-hidden rounded-full" aria-hidden="true">
+                        <span className="bg-bad" style={{ flex: h.counts.critical }} />
+                        <span className="bg-warn" style={{ flex: h.counts.recommended }} />
+                        <span className="bg-good" style={{ flex: h.counts.good }} />
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">
                       {Number.isNaN(at.getTime()) ? "—" : timeAgo(at, now)}
                     </TableCell>
                   </TableRow>
