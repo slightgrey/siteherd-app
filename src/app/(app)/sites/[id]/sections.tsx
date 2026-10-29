@@ -1,9 +1,10 @@
+import { CircleCheck, Code2, FileWarning, HeartPulse, KeyRound, RefreshCw, Server, ShieldAlert, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { CopyField } from "@/components/copy-field";
 import { EmptyState } from "@/components/page-header";
-import { FailedLoginsBadge, HealthBadge, IntegrityBadge, ToneBadge, UpdatesBadge } from "@/components/report-badges";
+import { FailedLoginsBadge, HealthBadge, IntegrityBadge, ToneBadge } from "@/components/report-badges";
 import { timeAgo } from "@/components/site-status";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
@@ -11,6 +12,7 @@ import { encodeConnectionKey } from "@/lib/connection-key";
 import { attentionReasons } from "@/lib/fleet";
 import { integrityProblems, pendingUpdates, type Health, type Integrity, type PluginIntegrity, type Report } from "@/lib/report";
 import { loadSite, type SiteData } from "@/lib/site";
+import { cn } from "@/lib/utils";
 
 type Params = Promise<{ id: string }>;
 
@@ -70,7 +72,7 @@ async function Resolve({
 export function SectionTitle({ title, description }: { title: string; description?: React.ReactNode }) {
   return (
     <div className="mb-4">
-      <h2 className="text-xl font-semibold">{title}</h2>
+      <h2 className="font-display text-xl font-semibold tracking-tight">{title}</h2>
       {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
     </div>
   );
@@ -81,22 +83,74 @@ export function checkedAgo(iso: string, now: number) {
   return Number.isNaN(date.getTime()) ? null : `Checked ${timeAgo(date, now)}`;
 }
 
-function Stat({ label, value, href, children }: { label: string; value: React.ReactNode; href?: string; children?: React.ReactNode }) {
-  const card = (
-    <Card size="sm" className="h-full bg-transparent">
-      <CardHeader>
-        <CardDescription>{label}</CardDescription>
-        <CardTitle className="font-mono text-xl">{value}</CardTitle>
-      </CardHeader>
-      {children && <CardContent className="text-sm text-muted-foreground">{children}</CardContent>}
-    </Card>
-  );
-  return href ? (
-    <Link href={href} className="rounded-xl transition-colors hover:bg-muted/50">
-      {card}
+type Tone = "good" | "warn" | "bad" | "neutral";
+
+const toneWell: Record<Tone, string> = {
+  good: "bg-good-soft text-good",
+  warn: "bg-warn-soft text-warn",
+  bad: "bg-bad-soft text-bad",
+  neutral: "bg-muted text-muted-foreground",
+};
+
+const tileClass =
+  "group flex min-w-0 flex-col gap-3 rounded-[14px] bg-card p-5 text-card-foreground shadow-card ring-1 ring-border transition-all hover:-translate-y-0.5 hover:shadow-lift focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none motion-reduce:hover:translate-y-0";
+
+/** One overview tile: eyebrow label, the value large, then a detail line. The whole tile links to its page. */
+function Stat({
+  label,
+  value,
+  href,
+  icon: Icon,
+  tone,
+  mono = false,
+  children,
+}: {
+  label: string;
+  value: React.ReactNode;
+  href: string;
+  icon: LucideIcon;
+  tone: Tone;
+  /** Versions read better in the mono face; counts use the display face. */
+  mono?: boolean;
+  children?: React.ReactNode;
+}) {
+  return (
+    <Link href={href} className={tileClass}>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">{label}</span>
+        <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-[10px]", toneWell[tone])}>
+          <Icon className="size-4" />
+        </span>
+      </div>
+      <div
+        className={cn(
+          "tabular-nums",
+          mono ? "font-mono text-[26px] leading-9 font-medium tracking-tight" : "font-display text-4xl font-semibold tracking-tight",
+        )}
+      >
+        {value}
+      </div>
+      {children && <div className="mt-auto flex min-w-0 flex-wrap items-center gap-2 text-[13px] text-muted-foreground">{children}</div>}
     </Link>
-  ) : (
-    card
+  );
+}
+
+/** The last 24 hours of failed logins as bars, oldest on the left. */
+function LoginSpark({ hours }: { hours: Report["failed_logins_hourly"] }) {
+  const sorted = [...hours].sort((a, b) => a.hour - b.hour).slice(-24);
+  if (sorted.length < 2) return null;
+  const totals = sorted.map((h) => h.login + h.xmlrpc + h.rest + h.other);
+  const max = Math.max(1, ...totals);
+  return (
+    <div className="flex h-7 items-end gap-[2px]" role="img" aria-label={`Failed logins per hour, peak ${max}`}>
+      {totals.map((n, i) => (
+        <span
+          key={sorted[i].hour}
+          className={cn("min-h-[2px] flex-1 rounded-[2px]", n === 0 ? "bg-muted" : i === totals.length - 1 ? "bg-bad" : "bg-bad/45")}
+          style={{ height: `${Math.max(8, (n / max) * 100)}%` }}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -105,54 +159,152 @@ export function OverviewStats({ data }: { data: WithReport }) {
   const base = `/sites/${site.id}`;
   const updates = pendingUpdates(report, data.excluded);
   const problems = integrityProblems(report.integrity);
+  const health = report.health?.counts;
+  const failed = report.failed_logins_24h;
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-      <Stat label="WordPress" value={report.wp_version || "—"} href={`${base}/core`}>
-        {updates.core ? <ToneBadge t="warn">{updates.core} available</ToneBadge> : report.core_update ? "Update excluded" : "Latest version"}
-      </Stat>
-      <Stat label="PHP" value={report.php_version || "—"} href={`${base}/core`}>
-        Database {report.db_version || "unknown"}
-      </Stat>
-      <Stat label="Pending updates" value={updates.total} href={`${base}/plugins`}>
-        <UpdatesBadge total={updates.total} />
-      </Stat>
-      <Stat label="Site Health" value={report.health ? `${report.health.counts.good} passed` : "—"} href={`${base}/health`}>
-        <div className="flex flex-wrap items-center gap-2">
+    <div className="grid gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <Stat label="WordPress" value={report.wp_version || "—"} href={`${base}/core`} icon={Code2} tone={updates.core ? "warn" : "good"} mono>
+          {updates.core ? (
+            <ToneBadge t="warn">{updates.core} available</ToneBadge>
+          ) : (
+            <>
+              <span className="size-1.5 rounded-full bg-good" />
+              {report.core_update ? "Update excluded" : "Latest version"}
+            </>
+          )}
+        </Stat>
+        <Stat label="PHP" value={report.php_version || "—"} href={`${base}/core`} icon={Server} tone="neutral" mono>
+          <span className="font-mono text-xs">Database {report.db_version || "unknown"}</span>
+        </Stat>
+        <Stat label="Pending updates" value={updates.total} href={`${base}/plugins`} icon={RefreshCw} tone={updates.total ? "warn" : "good"}>
+          {updates.total === 0 ? (
+            <>
+              <span className="size-1.5 rounded-full bg-good" />
+              Up to date
+            </>
+          ) : (
+            <span className="truncate">
+              {[
+                updates.plugins.length && `${updates.plugins.length} plugin${updates.plugins.length === 1 ? "" : "s"}`,
+                updates.themes.length && `${updates.themes.length} theme${updates.themes.length === 1 ? "" : "s"}`,
+                updates.core && "core",
+                updates.translations && "translations",
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>
+          )}
+        </Stat>
+        <Stat
+          label="Site Health"
+          value={health ? health.good : "—"}
+          href={`${base}/health`}
+          icon={HeartPulse}
+          tone={!health ? "neutral" : health.critical ? "bad" : health.recommended ? "warn" : "good"}
+        >
+          {health && (
+            <div className="flex h-1.5 w-full gap-0.5 overflow-hidden rounded-full" aria-hidden="true">
+              <span className="bg-good" style={{ flex: health.good }} />
+              <span className="bg-warn" style={{ flex: health.recommended }} />
+              <span className="bg-bad" style={{ flex: health.critical }} />
+            </div>
+          )}
           <HealthBadge health={report.health} />
-          {report.health && checkedAgo(report.health.checked_at, now)}
-        </div>
-      </Stat>
-      <Stat label="Failed logins (24 h)" value={report.failed_logins_24h} href={`${base}/logins`}>
-        {report.failed_logins_24h === 0 ? "None" : <FailedLoginsBadge count={report.failed_logins_24h} />}
-      </Stat>
-      <Stat label="File integrity" value={problems ? (problems.total === 0 ? "OK" : problems.total) : "—"} href={`${base}/security`}>
-        <div className="flex flex-wrap items-center gap-2">
+          {report.health && <span>{health!.good} passed · {checkedAgo(report.health.checked_at, now)}</span>}
+        </Stat>
+        <Stat label="Failed logins · 24 h" value={failed} href={`${base}/logins`} icon={KeyRound} tone={failed >= 20 ? "bad" : failed > 0 ? "warn" : "neutral"}>
+          <div className="w-full">
+            <LoginSpark hours={report.failed_logins_hourly} />
+          </div>
+          {failed === 0 ? "None in the last 24 hours" : <FailedLoginsBadge count={failed} />}
+        </Stat>
+        <Stat
+          label="File integrity"
+          value={problems ? (problems.total === 0 ? "OK" : problems.total) : "—"}
+          href={`${base}/security`}
+          icon={FileWarning}
+          tone={!problems ? "neutral" : problems.total ? "bad" : "good"}
+        >
           <IntegrityBadge integrity={report.integrity} />
           {report.integrity && checkedAgo(report.integrity.checked_at, now)}
-        </div>
-      </Stat>
+        </Stat>
+      </div>
+      <Installed data={data} />
     </div>
+  );
+}
+
+/** What's installed: plugin and theme counts, the active theme, and site facts. */
+function Installed({ data }: { data: WithReport }) {
+  const { report, site } = data;
+  const base = `/sites/${site.id}`;
+  const activePlugins = report.plugins.filter((p) => p.active).length;
+  const theme = report.themes.find((t) => t.active);
+  const facts: { label: string; value: React.ReactNode; href?: string }[] = [
+    { label: "Plugins", value: `${activePlugins} active · ${report.plugins.length - activePlugins} inactive`, href: `${base}/plugins` },
+    { label: "Theme", value: theme ? `${theme.name} ${theme.version}` : "—", href: `${base}/themes` },
+    { label: "Language", value: report.locale || "—", href: `${base}/translations` },
+    { label: "Multisite", value: report.is_multisite ? "Yes" : "No" },
+    { label: "WP Siteherd", value: report.plugin_version ? `v${report.plugin_version}` : "—", href: `${base}/settings` },
+  ];
+  return (
+    <section className="overflow-hidden rounded-[14px] bg-card shadow-card ring-1 ring-border" aria-label="Installed">
+      <h2 className="px-5 pt-4 pb-3 font-display text-lg font-semibold tracking-tight">Installed</h2>
+      <dl className="grid grid-cols-1 border-t sm:grid-cols-2 xl:grid-cols-5">
+        {facts.map((f) => (
+          <div key={f.label} className="grid gap-1 border-b px-5 py-3.5 sm:border-r xl:border-b-0 xl:last:border-r-0">
+            <dt className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">{f.label}</dt>
+            <dd className="truncate font-mono text-[13px]">
+              {f.href ? (
+                <Link href={f.href} className="hover:text-primary">
+                  {f.value}
+                </Link>
+              ) : (
+                f.value
+              )}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
 
 export function AttentionCard({ data }: { data: SiteData }) {
   const reasons = attentionReasons(data);
+  const bad = reasons.some((r) => r.severity === "bad");
+  const tone: Tone = reasons.length === 0 ? "good" : bad ? "bad" : "warn";
+  const Icon = reasons.length === 0 ? CircleCheck : bad ? ShieldAlert : RefreshCw;
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Needs attention</CardTitle>
-        <CardDescription>{reasons.length === 0 ? "Nothing to do. This site is reporting, updated and healthy." : null}</CardDescription>
-      </CardHeader>
-      {reasons.length > 0 && (
-        <CardContent className="flex flex-wrap gap-1">
-          {reasons.map((r) => (
-            <ToneBadge key={r.text} t={r.severity}>
-              {r.text}
-            </ToneBadge>
-          ))}
-        </CardContent>
+    <section
+      aria-label="Needs attention"
+      className={cn(
+        "relative flex flex-wrap items-center gap-4 overflow-hidden rounded-[14px] bg-card px-5 py-4 shadow-card ring-1 ring-border",
+        "before:absolute before:inset-y-0 before:left-0 before:w-1",
+        tone === "bad" ? "before:bg-bad" : tone === "warn" ? "before:bg-warn" : "before:bg-good",
       )}
-    </Card>
+    >
+      <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-[10px]", toneWell[tone])}>
+        <Icon className="size-5" />
+      </span>
+      <div className="grid min-w-0 flex-1 gap-1.5">
+        <h2 className="font-display text-lg leading-6 font-semibold tracking-tight">
+          {reasons.length === 0 ? "All clear" : `${reasons.length} ${reasons.length === 1 ? "thing needs" : "things need"} attention`}
+        </h2>
+        {reasons.length === 0 ? (
+          <p className="text-sm text-muted-foreground">This site is reporting, updated and healthy.</p>
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {reasons.map((r) => (
+              <ToneBadge key={r.text} t={r.severity}>
+                {r.text}
+              </ToneBadge>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 
