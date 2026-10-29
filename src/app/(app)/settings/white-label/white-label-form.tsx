@@ -73,7 +73,7 @@ export function WhiteLabelForm({ agencyName }: { agencyName: string }) {
 
           <p className="text-xs text-muted-foreground">
             Connected sites pick up the new name with their next report (within about 10 minutes), or straight away when you
-            click Resync on a site. Sites need WP Siteherd 0.11.0 or later. The Plugins list on each site keeps showing WP Siteherd.
+            click Resync on a site. Sites need WP Siteherd 0.11.0 or later (0.11.1 for the name in the Plugins list).
           </p>
         </form>
       </CardContent>
